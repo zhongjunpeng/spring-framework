@@ -194,6 +194,16 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	// Implementation of BeanFactory interface
 	//---------------------------------------------------------------------
 
+	/**
+	 * 内部调用doGetBean(...)方法，其接受四个方法参数：
+	 * 		name：要获取 Bean 的名字
+	 * 		requiredType：要获取 Bean的类型
+	 * 		args：创建 Bean 时传递的参数。这个参数仅限于创建 Bean 时使用。
+	 * 		typeCheckOnly：是否为类型检查
+	 * @param name the name of the bean to retrieve
+	 * @return
+	 * @throws BeansException
+	 */
 	@Override
 	public Object getBean(String name) throws BeansException {
 		return doGetBean(name, null, null, false);
@@ -239,11 +249,16 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	protected <T> T doGetBean(final String name, @Nullable final Class<T> requiredType,
 			@Nullable final Object[] args, boolean typeCheckOnly) throws BeansException {
 
+		// 转换并返回 bean的名称，如果 name 是 alias ，则获取对应映射的 beanName
 		final String beanName = transformedBeanName(name);
 		Object bean;
 
+		// 从单例缓存或者实例工厂中获取 Bean对象
 		// Eagerly check singleton cache for manually registered singletons.
 		Object sharedInstance = getSingleton(beanName);
+		/**
+		 * 单例设计模式的Bean在整个过程中只会创建一次。第一次创建后会将该Bean加载到缓存中。后面在获取Bean就会直接从单例缓存中获取
+		 */
 		if (sharedInstance != null && args == null) {
 			if (logger.isTraceEnabled()) {
 				if (isSingletonCurrentlyInCreation(beanName)) {
@@ -254,6 +269,10 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 					logger.trace("Returning cached instance of singleton bean '" + beanName + "'");
 				}
 			}
+			//完成 FactoryBean 的相关处理，并用来获取 FactoryBean 的处理结果
+			/**
+			 * 因为缓存中记录的是最原始的Bean状态，得到的不一定是我们最终想要的。
+			 */
 			bean = getObjectForBeanInstance(sharedInstance, name, beanName, null);
 		}
 
@@ -1129,6 +1148,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 * @param name the user-specified name
 	 * @return the transformed bean name
 	 */
+	//调用 BeanFactoryUtils.transformedBeanName(),去除 FactoryBean 的修饰符
 	protected String transformedBeanName(String name) {
 		return canonicalName(BeanFactoryUtils.transformedBeanName(name));
 	}

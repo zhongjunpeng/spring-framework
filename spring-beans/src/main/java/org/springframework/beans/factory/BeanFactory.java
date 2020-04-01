@@ -136,6 +136,7 @@ public interface BeanFactory {
 	 * @throws NoSuchBeanDefinitionException if there is no bean with the specified name
 	 * @throws BeansException if the bean could not be obtained
 	 */
+	// 调用getBean(...)方法，触发Bean的加载流程
 	Object getBean(String name) throws BeansException;
 
 	/**
