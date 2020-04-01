@@ -174,7 +174,9 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 */
 	@Nullable
 	protected Object getSingleton(String beanName, boolean allowEarlyReference) {
+		// 从单例缓存中加载bean，缓存时一个ConcurrentHashMap
 		Object singletonObject = this.singletonObjects.get(beanName);
+		// 缓存中的bean为空，并且当前bean正在创建。
 		if (singletonObject == null && isSingletonCurrentlyInCreation(beanName)) {
 			synchronized (this.singletonObjects) {
 				singletonObject = this.earlySingletonObjects.get(beanName);
