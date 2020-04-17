@@ -275,6 +275,10 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			 */
 			bean = getObjectForBeanInstance(sharedInstance, name, beanName, null);
 		}
+		/**
+		 * 该 Bean 的 scope 不是 singleton
+		 * 该 Bean 的 scope 是 singleton ，但是没有初始化完成。
+		 */
 
 		else {
 			// Fail if we're already creating this bean instance:
@@ -293,6 +297,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			// Check if bean definition exists in this factory.
 			// 如果当前容器缓存中没有相对应的BeanDefinition对象，则会尝试从父类工厂中加载。
 			BeanFactory parentBeanFactory = getParentBeanFactory();
+			// parentBeanFactory 不为空且 beanDefinitionMap 中不存该 name 的 BeanDefinition
 			if (parentBeanFactory != null && !containsBeanDefinition(beanName)) {
 				// Not found -> check parent.
 				String nameToLookup = originalBeanName(name);
@@ -340,6 +345,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 					for (String dep : dependsOn) {
 						// 若给定的依赖 bean 已经注册为依赖给定的 bean
 						// 即循环依赖的情况，抛出 BeanCreationException 异常
+						// 校验该依赖是否已经注册给当前 Bean
 						if (isDependent(beanName, dep)) {
 							throw new BeanCreationException(mbd.getResourceDescription(), beanName,
 									"Circular depends-on relationship between '" + beanName + "' and '" + dep + "'");
@@ -374,6 +380,8 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 							throw ex;
 						}
 					});
+					//从 bean 实例中获取对象。
+					//加入我们需要对工厂 bean 进行处理，那么这里得到的其实是工厂 bean 的初始状态，但是我们真正需要的是工厂 bean 中定义 factory-method 方法中返回的 bean
 					bean = getObjectForBeanInstance(sharedInstance, name, beanName, mbd);
 				}
 				// 原型模式
@@ -1081,6 +1089,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 * @param beanName the name of the bean
 	 */
 	protected boolean isPrototypeCurrentlyInCreation(String beanName) {
+		// 一个“集合”存放着正在创建的 Bean ，从该集合中进行判断即可，只不过单例模式的“集合”为 Set ，而原型模式的则是 ThreadLocal 。
 		Object curVal = this.prototypesCurrentlyInCreation.get();
 		return (curVal != null &&
 				(curVal.equals(beanName) || (curVal instanceof Set && ((Set<?>) curVal).contains(beanName))));
@@ -1691,6 +1700,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			Object beanInstance, String name, String beanName, @Nullable RootBeanDefinition mbd) {
 
 		// Don't let calling code try to dereference the factory if the bean isn't a factory.
+		// 若为工厂类引用（name 以 & 开头）
 		if (BeanFactoryUtils.isFactoryDereference(name)) {
 			if (beanInstance instanceof NullBean) {
 				return beanInstance;
