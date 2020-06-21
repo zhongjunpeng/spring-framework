@@ -104,6 +104,30 @@ public class XmlBeanDefinitionReaderTests {
 		testBeanDefinitions(registry);
 	}
 
+	/**
+	 * 编程式使用IOC容器
+	 *
+	 * 整个过程分为三个步骤：资源定位、装载、注册。
+	 *
+	 * 装载：BeanDefinitionReader读取、解析Resource资源，将用户自定义的Bean表示成 IOC容器的内部数据结构：BeanDefinition。
+	 * 		在IOC容器内部维护着一个BeanDefinition Map的数据结构；
+	 * 		在配置文件中每一个<bean></bean>都对应着一个 BeanDefinition 对象。
+	 *
+	 * 	注册：向IOC容器注册解析得到的BeanDefinition对象，这个过程是通过BeanDefinitionRegistry接口来实现的。
+	 * 	在IoC容器内部将解析得到的BeanDefinition注入到HashMap容器中，IoC容器其实就是通过这个HashMap来维护这些BeanDefinition对象的。
+	 * 		在这里需要注意这个过程并没有完成依赖注入。因为在BeanFactory中，Bean的创建发生在应用第一次调用#getBean(...)方法时。
+	 * 		可以通过预处理的方式，对某个Bean设置 lazyinit = false 属性，那么这个Bean的依赖注入就会在容器初始化的时候完成。
+	 */
+	@Test
+	public void testWithFreshInputStream() {
+		//资源定位
+		Resource resource = new ClassPathResource("test.xml",getClass());
+		DefaultListableBeanFactory factory = new DefaultListableBeanFactory();
+		XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(factory);
+		//加载、注册
+		reader.loadBeanDefinitions(resource);
+	}
+
 	private void testBeanDefinitions(BeanDefinitionRegistry registry) {
 		assertEquals(24, registry.getBeanDefinitionCount());
 		assertEquals(24, registry.getBeanDefinitionNames().length);

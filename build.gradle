@@ -1,5 +1,7 @@
 buildscript {
 	repositories {
+		maven { url "https://maven.aliyun.com/repository/spring-plugin" }
+		maven { url "https://maven.aliyun.com/nexus/content/repositories/spring-plugin" }
 		maven { url "https://repo.spring.io/plugins-release" }
 	}
 	dependencies {
@@ -147,8 +149,9 @@ configure(allprojects) { project ->
 	}
 
 	repositories {
-		mavenCentral()
+	    maven { url "https://maven.aliyun.com/repository/central" }
 		maven { url "https://repo.spring.io/libs-release" }
+		mavenLocal()
 	}
 
 	dependencies {
@@ -184,11 +187,11 @@ configure(allprojects) { project ->
 		"https://tiles.apache.org/tiles-request/apidocs/",
 		"https://tiles.apache.org/framework/apidocs/",
 		"https://www.eclipse.org/aspectj/doc/released/aspectj5rt-api/",
-		"https://www.ehcache.org/apidocs/2.10.4/",
+		/*"https://www.ehcache.org/apidocs/2.10.4/",
 		"https://www.quartz-scheduler.org/api/2.3.0/",
 		"https://fasterxml.github.io/jackson-core/javadoc/2.9/",
 		"https://fasterxml.github.io/jackson-databind/javadoc/2.9/",
-		"https://fasterxml.github.io/jackson-dataformat-xml/javadoc/2.9/",
+		"https://fasterxml.github.io/jackson-dataformat-xml/javadoc/2.9/",*/
 		"https://hc.apache.org/httpcomponents-client-ga/httpclient/apidocs/",
 		"https://junit.org/junit4/javadoc/4.12/",
 		"https://junit.org/junit5/docs/${junit5Version}/api/"

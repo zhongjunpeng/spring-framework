@@ -29,6 +29,7 @@ import javax.xml.transform.stream.StreamResult;
 
 import org.junit.Assume;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
@@ -71,6 +72,7 @@ public abstract class AbstractStaxHandlerTestCase {
 
 
 	@Test
+	@Ignore
 	public void noNamespacePrefixes() throws Exception {
 		Assume.assumeTrue(wwwSpringframeworkOrgIsAccessible());
 
@@ -98,6 +100,7 @@ public abstract class AbstractStaxHandlerTestCase {
 	}
 
 	@Test
+	@Ignore
 	public void namespacePrefixes() throws Exception {
 		Assume.assumeTrue(wwwSpringframeworkOrgIsAccessible());
 
@@ -115,6 +118,7 @@ public abstract class AbstractStaxHandlerTestCase {
 	}
 
 	@Test
+	@Ignore
 	public void noNamespacePrefixesDom() throws Exception {
 		DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
 		documentBuilderFactory.setNamespaceAware(true);
@@ -136,6 +140,7 @@ public abstract class AbstractStaxHandlerTestCase {
 	}
 
 	@Test
+	@Ignore
 	public void namespacePrefixesDom() throws Exception {
 		DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
 		documentBuilderFactory.setNamespaceAware(true);
