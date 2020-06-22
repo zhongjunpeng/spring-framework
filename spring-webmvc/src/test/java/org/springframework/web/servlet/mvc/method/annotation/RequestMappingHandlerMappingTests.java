@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -33,6 +33,7 @@ import org.junit.Test;
 
 import org.springframework.core.annotation.AliasFor;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.test.MockHttpServletRequest;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.accept.ContentNegotiationManager;
 import org.springframework.web.accept.PathExtensionContentNegotiationStrategy;
@@ -151,6 +152,24 @@ public class RequestMappingHandlerMappingTests {
 
 		assertNotNull(info);
 		assertEquals(Collections.singleton("/api/user/{id}"), info.getPatternsCondition().getPatterns());
+	}
+
+	@Test // gh-23907
+	public void pathPrefixPreservesPathMatchingSettings() throws NoSuchMethodException {
+		this.handlerMapping.setUseSuffixPatternMatch(false);
+		this.handlerMapping.setPathPrefixes(Collections.singletonMap("/api", HandlerTypePredicate.forAnyHandlerType()));
+		this.handlerMapping.afterPropertiesSet();
+
+		Method method = ComposedAnnotationController.class.getMethod("get");
+		RequestMappingInfo info = this.handlerMapping.getMappingForMethod(method, ComposedAnnotationController.class);
+
+		assertNotNull(info);
+
+		MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/get");
+		assertNotNull(info.getPatternsCondition().getMatchingCondition(request));
+
+		request = new MockHttpServletRequest("GET", "/api/get.pdf");
+		assertNull(info.getPatternsCondition().getMatchingCondition(request));
 	}
 
 	@Test

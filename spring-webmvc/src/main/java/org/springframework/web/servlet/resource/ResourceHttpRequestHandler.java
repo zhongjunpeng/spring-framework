@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -151,7 +152,7 @@ public class ResourceHttpRequestHandler extends WebContentGenerator
 	 * String-based location values, with support for {@link UrlResource}'s
 	 * (e.g. files or HTTP URLs) with a special prefix to indicate the charset
 	 * to use when appending relative paths. For example
-	 * {@code "[charset=Windows-31J]http://example.org/path"}.
+	 * {@code "[charset=Windows-31J]https://example.org/path"}.
 	 * @since 4.3.13
 	 */
 	public void setLocationValues(List<String> locationValues) {
@@ -605,7 +606,10 @@ public class ResourceHttpRequestHandler extends WebContentGenerator
 					return true;
 				}
 			}
-			catch (IllegalArgumentException | UnsupportedEncodingException ex) {
+			catch (IllegalArgumentException ex) {
+				// May not be possible to decode...
+			}
+			catch (UnsupportedEncodingException ex) {
 				// Should never happen...
 			}
 		}

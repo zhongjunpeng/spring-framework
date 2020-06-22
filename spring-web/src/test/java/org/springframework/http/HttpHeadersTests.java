@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,7 +21,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.time.DateTimeException;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -33,12 +32,13 @@ import java.util.EnumSet;
 import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map.Entry;
 import java.util.TimeZone;
 
 import org.hamcrest.Matchers;
 import org.junit.Test;
 
-import static java.time.format.DateTimeFormatter.*;
+import static java.util.stream.Collectors.toList;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
 
@@ -49,6 +49,7 @@ import static org.junit.Assert.*;
  * @author Sebastien Deleuze
  * @author Brian Clozel
  * @author Juergen Hoeller
+ * @author Sam Brannen
  */
 public class HttpHeadersTests {
 
@@ -136,10 +137,10 @@ public class HttpHeadersTests {
 
 	@Test
 	public void location() throws URISyntaxException {
-		URI location = new URI("http://www.example.com/hotels");
+		URI location = new URI("https://www.example.com/hotels");
 		headers.setLocation(location);
 		assertEquals("Invalid Location header", location, headers.getLocation());
-		assertEquals("Invalid Location header", "http://www.example.com/hotels", headers.getFirst("Location"));
+		assertEquals("Invalid Location header", "https://www.example.com/hotels", headers.getFirst("Location"));
 	}
 
 	@Test
@@ -297,11 +298,6 @@ public class HttpHeadersTests {
 		headers.setExpires(zonedDateTime);
 		assertEquals("Invalid Expires header", zonedDateTime.toInstant().toEpochMilli(), headers.getExpires());
 		assertEquals("Invalid Expires header", "Thu, 18 Dec 2008 10:20:00 GMT", headers.getFirst("expires"));
-	}
-
-	@Test(expected = DateTimeException.class)  // SPR-16560
-	public void expiresLargeDate() {
-		headers.setExpires(Long.MAX_VALUE);
 	}
 
 	@Test  // SPR-10648 (example is from INT-3063)
@@ -503,37 +499,36 @@ public class HttpHeadersTests {
 
 	@Test
 	public void firstDate() {
-		headers.setDate(HttpHeaders.DATE, 1229595600000L);
-		assertThat(headers.getFirstDate(HttpHeaders.DATE), is(1229595600000L));
+		headers.setDate(HttpHeaders.DATE, 1496370120000L);
+		assertThat(headers.getFirstDate(HttpHeaders.DATE), is(1496370120000L));
 
 		headers.clear();
 
-		headers.add(HttpHeaders.DATE, "Thu, 18 Dec 2008 10:20:00 GMT");
+		headers.add(HttpHeaders.DATE, "Fri, 02 Jun 2017 02:22:00 GMT");
 		headers.add(HttpHeaders.DATE, "Sat, 18 Dec 2010 10:20:00 GMT");
-		assertThat(headers.getFirstDate(HttpHeaders.DATE), is(1229595600000L));
+		assertThat(headers.getFirstDate(HttpHeaders.DATE), is(1496370120000L));
 	}
 
 	@Test
 	public void firstZonedDateTime() {
-		ZonedDateTime date = ZonedDateTime.of(2017, 6, 22, 22, 22, 0, 0, ZoneId.of("GMT"));
+		ZonedDateTime date = ZonedDateTime.of(2017, 6, 2, 2, 22, 0, 0, ZoneId.of("GMT"));
 		headers.setZonedDateTime(HttpHeaders.DATE, date);
-		assertThat(headers.getFirst(HttpHeaders.DATE), is("Thu, 22 Jun 2017 22:22:00 GMT"));
+		assertThat(headers.getFirst(HttpHeaders.DATE), is("Fri, 02 Jun 2017 02:22:00 GMT"));
 		assertTrue(headers.getFirstZonedDateTime(HttpHeaders.DATE).isEqual(date));
 
 		headers.clear();
-		ZonedDateTime otherDate = ZonedDateTime.of(2010, 12, 18, 10, 20, 0, 0, ZoneId.of("GMT"));
-		headers.add(HttpHeaders.DATE, RFC_1123_DATE_TIME.format(date));
-		headers.add(HttpHeaders.DATE, RFC_1123_DATE_TIME.format(otherDate));
+		headers.add(HttpHeaders.DATE, "Fri, 02 Jun 2017 02:22:00 GMT");
+		headers.add(HttpHeaders.DATE, "Sat, 18 Dec 2010 10:20:00 GMT");
 		assertTrue(headers.getFirstZonedDateTime(HttpHeaders.DATE).isEqual(date));
 
 		// obsolete RFC 850 format
 		headers.clear();
-		headers.set(HttpHeaders.DATE, "Thursday, 22-Jun-17 22:22:00 GMT");
+		headers.set(HttpHeaders.DATE, "Friday, 02-Jun-17 02:22:00 GMT");
 		assertTrue(headers.getFirstZonedDateTime(HttpHeaders.DATE).isEqual(date));
 
 		// ANSI C's asctime() format
 		headers.clear();
-		headers.set(HttpHeaders.DATE, "Thu Jun 22 22:22:00 2017");
+		headers.set(HttpHeaders.DATE, "Fri Jun 02 02:22:00 2017");
 		assertTrue(headers.getFirstZonedDateTime(HttpHeaders.DATE).isEqual(date));
 	}
 
@@ -565,4 +560,130 @@ public class HttpHeadersTests {
 		assertEquals("Bearer foo", authorization);
 	}
 
+	@Test // https://github.com/spring-projects/spring-framework/issues/23633
+	public void keySetRemove() {
+		// Given
+		headers.add("Alpha", "apple");
+		headers.add("Bravo", "banana");
+		assertEquals(2, headers.size());
+		assertTrue("Alpha should be present", headers.containsKey("Alpha"));
+		assertTrue("Bravo should be present", headers.containsKey("Bravo"));
+		assertArrayEquals(new String[] {"Alpha", "Bravo"}, headers.keySet().toArray());
+
+		// When
+		boolean removed = headers.keySet().remove("Alpha");
+
+		// Then
+		assertTrue(removed);
+		assertFalse(headers.keySet().remove("Alpha"));
+		assertEquals(1, headers.size());
+		assertFalse("Alpha should have been removed", headers.containsKey("Alpha"));
+		assertTrue("Bravo should be present", headers.containsKey("Bravo"));
+		assertArrayEquals(new String[] {"Bravo"}, headers.keySet().toArray());
+		assertEquals(Collections.singletonMap("Bravo", Arrays.asList("banana")).entrySet(), headers.entrySet());
+	}
+
+	@Test
+	public void keySetOperations() {
+		headers.add("Alpha", "apple");
+		headers.add("Bravo", "banana");
+		assertEquals(2, headers.size());
+
+		// size()
+		assertEquals(2, headers.keySet().size());
+
+		// contains()
+		assertTrue("Alpha should be present", headers.keySet().contains("Alpha"));
+		assertTrue("alpha should be present", headers.keySet().contains("alpha"));
+		assertTrue("Bravo should be present", headers.keySet().contains("Bravo"));
+		assertTrue("BRAVO should be present", headers.keySet().contains("BRAVO"));
+		assertFalse("Charlie should not be present", headers.keySet().contains("Charlie"));
+
+		// toArray()
+		assertArrayEquals(new String[] {"Alpha", "Bravo"}, headers.keySet().toArray());
+
+		// spliterator() via stream()
+		assertEquals(Arrays.asList("Alpha", "Bravo"), headers.keySet().stream().collect(toList()));
+
+		// iterator()
+		List<String> results = new ArrayList<>();
+		headers.keySet().iterator().forEachRemaining(results::add);
+		assertEquals(Arrays.asList("Alpha", "Bravo"), results);
+
+		// remove()
+		assertTrue(headers.keySet().remove("Alpha"));
+		assertEquals(1, headers.size());
+		assertFalse(headers.keySet().remove("Alpha"));
+
+		// clear()
+		headers.keySet().clear();
+		assertEquals(0, headers.size());
+
+		// Unsupported operations
+		unsupported(() -> headers.keySet().add("x"));
+		unsupported(() -> headers.keySet().addAll(Collections.singleton("enigma")));
+	}
+
+	private static void unsupported(Runnable runnable) {
+		try {
+			runnable.run();
+			fail("should have thrown an UnsupportedOperationException");
+		}
+		catch (UnsupportedOperationException e) {
+			// expected
+		}
+	}
+
+	@Test
+	public void removalFromKeySetRemovesEntryFromUnderlyingMap() {
+		String headerName = "MyHeader";
+		String headerValue = "value";
+
+		assertTrue(headers.isEmpty());
+		headers.add(headerName, headerValue);
+		assertTrue(headers.containsKey(headerName));
+		headers.keySet().removeIf(key -> key.equals(headerName));
+		assertTrue(headers.isEmpty());
+		headers.add(headerName, headerValue);
+		assertEquals(headerValue, headers.get(headerName).get(0));
+	}
+
+	@Test
+	public void removalFromEntrySetRemovesEntryFromUnderlyingMap() {
+		String headerName = "MyHeader";
+		String headerValue = "value";
+
+		assertTrue(headers.isEmpty());
+		headers.add(headerName, headerValue);
+		assertTrue(headers.containsKey(headerName));
+		headers.entrySet().removeIf(entry -> entry.getKey().equals(headerName));
+		assertTrue(headers.isEmpty());
+		headers.add(headerName, headerValue);
+		assertEquals(headerValue, headers.get(headerName).get(0));
+	}
+
+	@Test
+	public void readOnlyHttpHeadersRetainEntrySetOrder() {
+		headers.add("aardvark", "enigma");
+		headers.add("beaver", "enigma");
+		headers.add("cat", "enigma");
+		headers.add("dog", "enigma");
+		headers.add("elephant", "enigma");
+
+		String[] expectedKeys = new String[] { "aardvark", "beaver", "cat", "dog", "elephant" };
+
+		assertArrayEquals(expectedKeys, headers.entrySet().stream().map(Entry::getKey).toArray());
+
+		HttpHeaders readOnlyHttpHeaders = HttpHeaders.readOnlyHttpHeaders(headers);
+		assertArrayEquals(expectedKeys, readOnlyHttpHeaders.entrySet().stream().map(Entry::getKey).toArray());
+	}
+
+	@Test // gh-25034
+	public void equalsUnwrapsHttpHeaders() {
+		HttpHeaders headers1 = new HttpHeaders();
+		HttpHeaders headers2 = new HttpHeaders(new HttpHeaders(headers1));
+
+		assertEquals(headers1, headers2);
+		assertEquals(headers2, headers1);
+	}
 }

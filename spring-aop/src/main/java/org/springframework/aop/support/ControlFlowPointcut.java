@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -34,14 +34,15 @@ import org.springframework.util.ObjectUtils;
  * @author Rod Johnson
  * @author Rob Harrop
  * @author Juergen Hoeller
+ * @author Sam Brannen
  */
 @SuppressWarnings("serial")
 public class ControlFlowPointcut implements Pointcut, ClassFilter, MethodMatcher, Serializable {
 
-	private Class<?> clazz;
+	private final Class<?> clazz;
 
 	@Nullable
-	private String methodName;
+	private final String methodName;
 
 	private volatile int evaluations;
 
@@ -140,6 +141,11 @@ public class ControlFlowPointcut implements Pointcut, ClassFilter, MethodMatcher
 			code = 37 * code + this.methodName.hashCode();
 		}
 		return code;
+	}
+
+	@Override
+	public String toString() {
+		return getClass().getName() + ": class = " + this.clazz.getName() + "; methodName = " + methodName;
 	}
 
 }

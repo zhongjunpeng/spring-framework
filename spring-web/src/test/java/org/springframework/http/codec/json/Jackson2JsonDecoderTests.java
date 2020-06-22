@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,6 +17,8 @@
 package org.springframework.http.codec.json;
 
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
@@ -33,6 +35,7 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.ResolvableType;
 import org.springframework.core.codec.AbstractDecoderTestCase;
 import org.springframework.core.codec.CodecException;
@@ -45,7 +48,10 @@ import org.springframework.util.MimeType;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonMap;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.springframework.core.ResolvableType.forClass;
 import static org.springframework.http.MediaType.APPLICATION_JSON;
 import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8;
@@ -67,9 +73,11 @@ public class Jackson2JsonDecoderTests extends AbstractDecoderTestCase<Jackson2Js
 
 	private Pojo pojo2 = new Pojo("f2", "b2");
 
+
 	public Jackson2JsonDecoderTests() {
 		super(new Jackson2JsonDecoder());
 	}
+
 
 	@Override
 	@Test
@@ -81,9 +89,14 @@ public class Jackson2JsonDecoderTests extends AbstractDecoderTestCase<Jackson2Js
 
 		assertFalse(decoder.canDecode(forClass(String.class), null));
 		assertFalse(decoder.canDecode(forClass(Pojo.class), APPLICATION_XML));
+		assertTrue(this.decoder.canDecode(forClass(Pojo.class),
+				new MediaType("application", "json", StandardCharsets.UTF_8)));
+		assertTrue(this.decoder.canDecode(forClass(Pojo.class),
+				new MediaType("application", "json", StandardCharsets.ISO_8859_1)));
+
 	}
 
-	@Test // SPR-15866
+	@Test  // SPR-15866
 	public void canDecodeWithProvidedMimeType() {
 		MimeType textJavascript = new MimeType("text", "javascript", StandardCharsets.UTF_8);
 		Jackson2JsonDecoder decoder = new Jackson2JsonDecoder(new ObjectMapper(), textJavascript);
@@ -202,15 +215,77 @@ public class Jackson2JsonDecoderTests extends AbstractDecoderTestCase<Jackson2Js
 		);
 	}
 
+	@Test
+	public void bigDecimalFlux() {
+		Flux<DataBuffer> input = stringBuffer("[ 1E+2 ]").flux();
+
+		testDecode(input, BigDecimal.class, step -> step
+				.expectNext(new BigDecimal("1E+2"))
+				.verifyComplete()
+		);
+	}
+
+	@Test
+	public void decodeNonUtf8Encoding() {
+		Mono<DataBuffer> input = stringBuffer("{\"foo\":\"bar\"}", StandardCharsets.UTF_16);
+
+		testDecode(input, ResolvableType.forType(new ParameterizedTypeReference<Map<String, String>>() {}),
+				step -> step.assertNext(o -> {
+					Map<String, String> map = (Map<String, String>) o;
+					assertEquals("bar", map.get("foo"));
+				})
+				.verifyComplete(),
+				MediaType.parseMediaType("application/json; charset=utf-16"),
+				null);
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void decodeNonUnicode() {
+		Flux<DataBuffer> input = Flux.concat(
+				stringBuffer("{\"føø\":\"bår\"}", StandardCharsets.ISO_8859_1)
+		);
+
+		testDecode(input, ResolvableType.forType(new ParameterizedTypeReference<Map<String, String>>() {
+				}),
+				step -> step.assertNext(o -> {
+					assertTrue(o instanceof Map);
+					Map<String, String> map = (Map<String, String>) o;
+					assertEquals(1, map.size());
+					assertEquals("bår", map.get("føø"));
+				})
+						.verifyComplete(),
+				MediaType.parseMediaType("application/json; charset=iso-8859-1"),
+				null);
+	}
+
+	@Test
+	public void decodeMonoNonUtf8Encoding() {
+		Mono<DataBuffer> input = stringBuffer("{\"foo\":\"bar\"}", StandardCharsets.UTF_16);
+
+		testDecodeToMono(input, ResolvableType.forType(new ParameterizedTypeReference<Map<String, String>>() {
+				}),
+				step -> step.assertNext(o -> {
+					Map<String, String> map = (Map<String, String>) o;
+					assertEquals("bar", map.get("foo"));
+				})
+				.verifyComplete(),
+				MediaType.parseMediaType("application/json; charset=utf-16"),
+				null);
+	}
+
 	private Mono<DataBuffer> stringBuffer(String value) {
+		return stringBuffer(value, StandardCharsets.UTF_8);
+	}
+
+	private Mono<DataBuffer> stringBuffer(String value, Charset charset) {
 		return Mono.defer(() -> {
-			byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+			byte[] bytes = value.getBytes(charset);
 			DataBuffer buffer = this.bufferFactory.allocateBuffer(bytes.length);
 			buffer.write(bytes);
 			return Mono.just(buffer);
 		});
 	}
-
 
 
 	private static class BeanWithNoDefaultConstructor {
@@ -231,12 +306,14 @@ public class Jackson2JsonDecoderTests extends AbstractDecoderTestCase<Jackson2Js
 		public String getProperty2() {
 			return this.property2;
 		}
-
 	}
+
 
 	@JsonDeserialize(using = Deserializer.class)
 	public static class TestObject {
+
 		private int test;
+
 		public int getTest() {
 			return this.test;
 		}
@@ -244,6 +321,7 @@ public class Jackson2JsonDecoderTests extends AbstractDecoderTestCase<Jackson2Js
 			this.test = test;
 		}
 	}
+
 
 	public static class Deserializer extends StdDeserializer<TestObject> {
 
@@ -254,8 +332,7 @@ public class Jackson2JsonDecoderTests extends AbstractDecoderTestCase<Jackson2Js
 		}
 
 		@Override
-		public TestObject deserialize(JsonParser p,
-				DeserializationContext ctxt) throws IOException {
+		public TestObject deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
 			JsonNode node = p.readValueAsTree();
 			TestObject result = new TestObject();
 			result.setTest(node.get("test").asInt());

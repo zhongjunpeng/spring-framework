@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -44,8 +44,9 @@ import org.springframework.util.StringUtils;
  * @author Rossen Stoyanchev
  * @author Sebastien Deleuze
  * @author Kazuki Shimizu
+ * @author Sam Brannen
  * @since 3.0
- * @see <a href="http://tools.ietf.org/html/rfc7231#section-3.1.1.1">
+ * @see <a href="https://tools.ietf.org/html/rfc7231#section-3.1.1.1">
  *     HTTP 1.1: Semantics and Content, section 3.1.1.1</a>
  */
 public class MediaType extends MimeType implements Serializable {
@@ -553,7 +554,9 @@ public class MediaType extends MimeType implements Serializable {
 			return Collections.emptyList();
 		}
 		return MimeTypeUtils.tokenize(mediaTypes).stream()
-				.map(MediaType::parseMediaType).collect(Collectors.toList());
+				.filter(StringUtils::hasText)
+				.map(MediaType::parseMediaType)
+				.collect(Collectors.toList());
 	}
 
 	/**
@@ -634,7 +637,7 @@ public class MediaType extends MimeType implements Serializable {
 	 * <blockquote>audio/basic == text/html</blockquote>
 	 * <blockquote>audio/basic == audio/wave</blockquote>
 	 * @param mediaTypes the list of media types to be sorted
-	 * @see <a href="http://tools.ietf.org/html/rfc7231#section-5.3.2">HTTP 1.1: Semantics
+	 * @see <a href="https://tools.ietf.org/html/rfc7231#section-5.3.2">HTTP 1.1: Semantics
 	 * and Content, section 5.3.2</a>
 	 */
 	public static void sortBySpecificity(List<MediaType> mediaTypes) {

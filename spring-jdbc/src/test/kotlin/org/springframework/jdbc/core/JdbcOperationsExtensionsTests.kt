@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2017 the original author or authors
+ * Copyright 2002-2019 the original author or authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * 	http://www.apache.org/licenses/LICENSE-2.0
+ * 	https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -49,6 +49,13 @@ class JdbcOperationsExtensionsTests {
 		val sql = "select age from customer where id = ?"
 		template.queryForObject(sql, 3) { rs: ResultSet, _: Int -> rs.getInt(1) }
 		verify(template, times(1)).queryForObject(eq(sql), any<RowMapper<Int>>(), eq(3))
+	}
+
+	@Test  // gh-22682
+	fun `queryForObject with nullable RowMapper-like function`() {
+		val sql = "select age from customer where id = ?"
+		template.queryForObject(sql, 3) { _, _ -> null as Int? }
+		verify(template, times(1)).queryForObject(eq(sql), any<RowMapper<Int?>>(), eq(3))
 	}
 
 	@Test
@@ -100,6 +107,13 @@ class JdbcOperationsExtensionsTests {
 			rs.getInt(1)
 		}
 		verify(template, times(1)).query(eq(sql), any<ResultSetExtractor<Int>>(), eq(3))
+	}
+
+	@Test  // gh-22682
+	fun `query with nullable ResultSetExtractor-like function`() {
+		val sql = "select age from customer where id = ?"
+		template.query<Int?>(sql, 3) { _ -> null }
+		verify(template, times(1)).query(eq(sql), any<ResultSetExtractor<Int?>>(), eq(3))
 	}
 
 	@Test

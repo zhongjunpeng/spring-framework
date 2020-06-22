@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -19,6 +19,7 @@ package org.springframework.util.xml;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.net.Socket;
+
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.stream.XMLStreamException;
@@ -46,7 +47,7 @@ public abstract class AbstractStaxHandlerTestCase {
 
 	private static final String COMPLEX_XML =
 			"<?xml version='1.0' encoding='UTF-8'?>" +
-					"<!DOCTYPE beans PUBLIC \"-//SPRING//DTD BEAN 2.0//EN\" \"http://www.springframework.org/dtd/spring-beans-2.0.dtd\">" +
+					"<!DOCTYPE beans PUBLIC \"-//SPRING//DTD BEAN 2.0//EN\" \"https://www.springframework.org/dtd/spring-beans-2.0.dtd\">" +
 					"<?pi content?><root xmlns='namespace'><prefix:child xmlns:prefix='namespace2' prefix:attr='value'>characters <![CDATA[cdata]]></prefix:child>" +
 					"<!-- comment -->" +
 					"</root>";

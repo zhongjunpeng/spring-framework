@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,6 +18,7 @@ package org.springframework.http.codec.xml;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
+
 import javax.xml.stream.events.XMLEvent;
 
 import org.junit.Test;
@@ -27,8 +28,10 @@ import reactor.test.StepVerifier;
 
 import org.springframework.core.io.buffer.AbstractLeakCheckingTestCase;
 import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.core.io.buffer.DataBufferLimitException;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author Arjen Poutsma
@@ -43,11 +46,12 @@ public class XmlEventDecoderTests extends AbstractLeakCheckingTestCase {
 
 	private XmlEventDecoder decoder = new XmlEventDecoder();
 
+
 	@Test
 	public void toXMLEventsAalto() {
 
 		Flux<XMLEvent> events =
-				this.decoder.decode(stringBuffer(XML), null, null, Collections.emptyMap());
+				this.decoder.decode(stringBufferMono(XML), null, null, Collections.emptyMap());
 
 		StepVerifier.create(events)
 				.consumeNextWith(e -> assertTrue(e.isStartDocument()))
@@ -68,7 +72,7 @@ public class XmlEventDecoderTests extends AbstractLeakCheckingTestCase {
 		decoder.useAalto = false;
 
 		Flux<XMLEvent> events =
-				this.decoder.decode(stringBuffer(XML), null, null, Collections.emptyMap());
+				this.decoder.decode(stringBufferMono(XML), null, null, Collections.emptyMap());
 
 		StepVerifier.create(events)
 				.consumeNextWith(e -> assertTrue(e.isStartDocument()))
@@ -86,9 +90,31 @@ public class XmlEventDecoderTests extends AbstractLeakCheckingTestCase {
 	}
 
 	@Test
+	public void toXMLEventsWithLimit() {
+
+		this.decoder.setMaxInMemorySize(6);
+
+		Flux<String> source = Flux.just(
+				"<pojo>", "<foo>", "foofoo", "</foo>", "<bar>", "barbarbar", "</bar>", "</pojo>");
+
+		Flux<XMLEvent> events = this.decoder.decode(
+				source.map(this::stringBuffer), null, null, Collections.emptyMap());
+
+		StepVerifier.create(events)
+				.consumeNextWith(e -> assertTrue(e.isStartDocument()))
+				.consumeNextWith(e -> assertStartElement(e, "pojo"))
+				.consumeNextWith(e -> assertStartElement(e, "foo"))
+				.consumeNextWith(e -> assertCharacters(e, "foofoo"))
+				.consumeNextWith(e -> assertEndElement(e, "foo"))
+				.consumeNextWith(e -> assertStartElement(e, "bar"))
+				.expectError(DataBufferLimitException.class)
+				.verify();
+	}
+
+	@Test
 	public void decodeErrorAalto() {
 		Flux<DataBuffer> source = Flux.concat(
-				stringBuffer("<pojo>"),
+				stringBufferMono("<pojo>"),
 				Flux.error(new RuntimeException()));
 
 		Flux<XMLEvent> events =
@@ -106,7 +132,7 @@ public class XmlEventDecoderTests extends AbstractLeakCheckingTestCase {
 		decoder.useAalto = false;
 
 		Flux<DataBuffer> source = Flux.concat(
-				stringBuffer("<pojo>"),
+				stringBufferMono("<pojo>"),
 				Flux.error(new RuntimeException()));
 
 		Flux<XMLEvent> events =
@@ -132,13 +158,15 @@ public class XmlEventDecoderTests extends AbstractLeakCheckingTestCase {
 		assertEquals(expectedData, event.asCharacters().getData());
 	}
 
-	private Mono<DataBuffer> stringBuffer(String value) {
-		return Mono.defer(() -> {
-			byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
-			DataBuffer buffer = this.bufferFactory.allocateBuffer(bytes.length);
-			buffer.write(bytes);
-			return Mono.just(buffer);
-		});
+	private DataBuffer stringBuffer(String value) {
+		byte[] bytes = value.getBytes(StandardCharsets.UTF_8);
+		DataBuffer buffer = this.bufferFactory.allocateBuffer(bytes.length);
+		buffer.write(bytes);
+		return buffer;
+	}
+
+	private Mono<DataBuffer> stringBufferMono(String value) {
+		return Mono.defer(() -> Mono.just(stringBuffer(value)));
 	}
 
 }

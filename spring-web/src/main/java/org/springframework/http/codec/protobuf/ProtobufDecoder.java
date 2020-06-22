@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -36,6 +36,7 @@ import org.springframework.core.ResolvableType;
 import org.springframework.core.codec.Decoder;
 import org.springframework.core.codec.DecodingException;
 import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.core.io.buffer.DataBufferLimitException;
 import org.springframework.core.io.buffer.DataBufferUtils;
 import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
@@ -77,6 +78,7 @@ public class ProtobufDecoder extends ProtobufCodecSupport implements Decoder<Mes
 
 	private static final ConcurrentMap<Class<?>, Method> methodCache = new ConcurrentReferenceHashMap<>();
 
+
 	private final ExtensionRegistry extensionRegistry;
 
 	private int maxMessageSize = DEFAULT_MESSAGE_MAX_SIZE;
@@ -100,8 +102,22 @@ public class ProtobufDecoder extends ProtobufCodecSupport implements Decoder<Mes
 	}
 
 
+	/**
+	 * The max size allowed per message.
+	 * <p>By default in 5.1 this is set to 64K. In 5.2 the default for this limit
+	 * is set to 256K.
+	 * @param maxMessageSize the max size per message, or -1 for unlimited
+	 */
 	public void setMaxMessageSize(int maxMessageSize) {
 		this.maxMessageSize = maxMessageSize;
+	}
+
+	/**
+	 * Return the {@link #setMaxMessageSize configured} message size limit.
+	 * @since 5.1.11
+	 */
+	public int getMaxMessageSize() {
+		return this.maxMessageSize;
 	}
 
 
@@ -114,15 +130,19 @@ public class ProtobufDecoder extends ProtobufCodecSupport implements Decoder<Mes
 	public Flux<Message> decode(Publisher<DataBuffer> inputStream, ResolvableType elementType,
 			@Nullable MimeType mimeType, @Nullable Map<String, Object> hints) {
 
+		MessageDecoderFunction decoderFunction =
+				new MessageDecoderFunction(elementType, this.maxMessageSize);
+
 		return Flux.from(inputStream)
-				.flatMapIterable(new MessageDecoderFunction(elementType, this.maxMessageSize));
+				.flatMapIterable(decoderFunction)
+				.doOnTerminate(decoderFunction::discard);
 	}
 
 	@Override
 	public Mono<Message> decodeToMono(Publisher<DataBuffer> inputStream, ResolvableType elementType,
 			@Nullable MimeType mimeType, @Nullable Map<String, Object> hints) {
 
-		return DataBufferUtils.join(inputStream).map(dataBuffer -> {
+		return DataBufferUtils.join(inputStream, getMaxMessageSize()).map(dataBuffer -> {
 					try {
 						Message.Builder builder = getMessageBuilder(elementType.toClass());
 						ByteBuffer buffer = dataBuffer.asByteBuffer();
@@ -193,9 +213,9 @@ public class ProtobufDecoder extends ProtobufCodecSupport implements Decoder<Mes
 						if (!readMessageSize(input)) {
 							return messages;
 						}
-						if (this.messageBytesToRead > this.maxMessageSize) {
-							throw new DecodingException(
-									"The number of bytes to read from the incoming stream " +
+						if (this.maxMessageSize > 0 && this.messageBytesToRead > this.maxMessageSize) {
+							throw new DataBufferLimitException(
+									"The number of bytes to read for message " +
 											"(" + this.messageBytesToRead + ") exceeds " +
 											"the configured limit (" + this.maxMessageSize + ")");
 						}
@@ -212,12 +232,13 @@ public class ProtobufDecoder extends ProtobufCodecSupport implements Decoder<Mes
 					this.messageBytesToRead -= chunkBytesToRead;
 
 					if (this.messageBytesToRead == 0) {
-						Message.Builder builder = getMessageBuilder(this.elementType.toClass());
-						ByteBuffer buffer = this.output.asByteBuffer();
-						builder.mergeFrom(CodedInputStream.newInstance(buffer), extensionRegistry);
-						messages.add(builder.build());
+						CodedInputStream stream = CodedInputStream.newInstance(this.output.asByteBuffer());
 						DataBufferUtils.release(this.output);
 						this.output = null;
+						Message message = getMessageBuilder(this.elementType.toClass())
+								.mergeFrom(stream, extensionRegistry)
+								.build();
+						messages.add(message);
 					}
 				} while (remainingBytesToRead > 0);
 				return messages;
@@ -285,6 +306,12 @@ public class ProtobufDecoder extends ProtobufCodecSupport implements Decoder<Mes
 			}
 			this.offset = 0;
 			throw new DecodingException("Cannot parse message size: malformed varint");
+		}
+
+		public void discard() {
+			if (this.output != null) {
+				DataBufferUtils.release(this.output);
+			}
 		}
 	}
 

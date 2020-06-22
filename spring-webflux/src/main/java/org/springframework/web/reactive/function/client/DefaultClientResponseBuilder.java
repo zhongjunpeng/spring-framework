@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -44,7 +44,7 @@ final class DefaultClientResponseBuilder implements ClientResponse.Builder {
 
 	private ExchangeStrategies strategies;
 
-	private HttpStatus statusCode = HttpStatus.OK;
+	private int statusCode = 200;
 
 	private final HttpHeaders headers = new HttpHeaders();
 
@@ -53,23 +53,28 @@ final class DefaultClientResponseBuilder implements ClientResponse.Builder {
 	private Flux<DataBuffer> body = Flux.empty();
 
 
-	public DefaultClientResponseBuilder(ExchangeStrategies strategies) {
+	DefaultClientResponseBuilder(ExchangeStrategies strategies) {
 		Assert.notNull(strategies, "ExchangeStrategies must not be null");
 		this.strategies = strategies;
 	}
 
-	public DefaultClientResponseBuilder(ClientResponse other) {
+	DefaultClientResponseBuilder(ClientResponse other) {
 		Assert.notNull(other, "ClientResponse must not be null");
 		this.strategies = other.strategies();
-		statusCode(other.statusCode());
-		headers(headers -> headers.addAll(other.headers().asHttpHeaders()));
-		cookies(cookies -> cookies.addAll(other.cookies()));
+		this.statusCode = other.rawStatusCode();
+		this.headers.addAll(other.headers().asHttpHeaders());
+		this.cookies.addAll(other.cookies());
 	}
 
 
 	@Override
 	public DefaultClientResponseBuilder statusCode(HttpStatus statusCode) {
-		Assert.notNull(statusCode, "HttpStatus must not be null");
+		return rawStatusCode(statusCode.value());
+	}
+
+	@Override
+	public DefaultClientResponseBuilder rawStatusCode(int statusCode) {
+		Assert.isTrue(statusCode >= 100 && statusCode < 600, "StatusCode must be between 1xx and 5xx");
 		this.statusCode = statusCode;
 		return this;
 	}
@@ -129,20 +134,18 @@ final class DefaultClientResponseBuilder implements ClientResponse.Builder {
 
 	@Override
 	public ClientResponse build() {
-
 		ClientHttpResponse httpResponse =
 				new BuiltClientHttpResponse(this.statusCode, this.headers, this.cookies, this.body);
 
 		// When building ClientResponse manually, the ClientRequest.logPrefix() has to be passed,
 		// e.g. via ClientResponse.Builder, but this (builder) is not used currently.
-
 		return new DefaultClientResponse(httpResponse, this.strategies, "");
 	}
 
 
 	private static class BuiltClientHttpResponse implements ClientHttpResponse {
 
-		private final HttpStatus statusCode;
+		private final int statusCode;
 
 		private final HttpHeaders headers;
 
@@ -150,7 +153,7 @@ final class DefaultClientResponseBuilder implements ClientResponse.Builder {
 
 		private final Flux<DataBuffer> body;
 
-		public BuiltClientHttpResponse(HttpStatus statusCode, HttpHeaders headers,
+		BuiltClientHttpResponse(int statusCode, HttpHeaders headers,
 				MultiValueMap<String, ResponseCookie> cookies, Flux<DataBuffer> body) {
 
 			this.statusCode = statusCode;
@@ -161,12 +164,12 @@ final class DefaultClientResponseBuilder implements ClientResponse.Builder {
 
 		@Override
 		public HttpStatus getStatusCode() {
-			return this.statusCode;
+			return HttpStatus.valueOf(this.statusCode);
 		}
 
 		@Override
 		public int getRawStatusCode() {
-			return this.statusCode.value();
+			return this.statusCode;
 		}
 
 		@Override

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -90,12 +90,12 @@ public class MimeTypeTests {
 
 	@Test
 	public void parseQuotedSeparator() {
-		String s = "application/xop+xml;charset=utf-8;type=\"application/soap+xml;action=\\\"http://x.y.z\\\"\"";
+		String s = "application/xop+xml;charset=utf-8;type=\"application/soap+xml;action=\\\"https://x.y.z\\\"\"";
 		MimeType mimeType = MimeType.valueOf(s);
 		assertEquals("Invalid type", "application", mimeType.getType());
 		assertEquals("Invalid subtype", "xop+xml", mimeType.getSubtype());
 		assertEquals("Invalid charset", StandardCharsets.UTF_8, mimeType.getCharset());
-		assertEquals("\"application/soap+xml;action=\\\"http://x.y.z\\\"\"", mimeType.getParameter("type"));
+		assertEquals("\"application/soap+xml;action=\\\"https://x.y.z\\\"\"", mimeType.getParameter("type"));
 	}
 
 	@Test
@@ -275,6 +275,13 @@ public class MimeTypeTests {
 		mimeTypes = MimeTypeUtils.parseMimeTypes(null);
 		assertNotNull("No mime types returned", mimeTypes);
 		assertEquals("Invalid amount of mime types", 0, mimeTypes.size());
+	}
+
+	@Test // gh-23241
+	public void parseMimeTypesWithTrailingComma() {
+		List<MimeType> mimeTypes = MimeTypeUtils.parseMimeTypes("text/plain, text/html,");
+		assertNotNull("No mime types returned", mimeTypes);
+		assertEquals("Incorrect number of mime types", 2, mimeTypes.size());
 	}
 
 	@Test // SPR-17459

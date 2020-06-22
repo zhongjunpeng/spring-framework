@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -256,11 +256,8 @@ public class DefaultStompSession implements ConnectionHandlingStompSession {
 	private Message<byte[]> createMessage(StompHeaderAccessor accessor, @Nullable Object payload) {
 		accessor.updateSimpMessageHeadersFromStompHeaders();
 		Message<byte[]> message;
-		if (payload == null) {
+		if (isEmpty(payload)) {
 			message = MessageBuilder.createMessage(EMPTY_PAYLOAD, accessor.getMessageHeaders());
-		}
-		else if (payload instanceof byte[]) {
-			message = MessageBuilder.createMessage((byte[]) payload, accessor.getMessageHeaders());
 		}
 		else {
 			message = (Message<byte[]>) getMessageConverter().toMessage(payload, accessor.getMessageHeaders());
@@ -272,6 +269,11 @@ public class DefaultStompSession implements ConnectionHandlingStompSession {
 			}
 		}
 		return message;
+	}
+
+	private boolean isEmpty(@Nullable Object payload) {
+		return payload == null || StringUtils.isEmpty(payload) ||
+				(payload instanceof byte[] && ((byte[]) payload).length == 0);
 	}
 
 	private void execute(Message<byte[]> message) {

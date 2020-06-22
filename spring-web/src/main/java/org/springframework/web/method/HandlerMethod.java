@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -339,7 +339,7 @@ public class HandlerMethod {
 		List<Annotation[][]> parameterAnnotations = this.interfaceParameterAnnotations;
 		if (parameterAnnotations == null) {
 			parameterAnnotations = new ArrayList<>();
-			for (Class<?> ifc : this.method.getDeclaringClass().getInterfaces()) {
+			for (Class<?> ifc : ClassUtils.getAllInterfacesForClassAsSet(this.method.getDeclaringClass())) {
 				for (Method candidate : ifc.getMethods()) {
 					if (isOverrideFor(candidate)) {
 						parameterAnnotations.add(candidate.getParameterAnnotations());

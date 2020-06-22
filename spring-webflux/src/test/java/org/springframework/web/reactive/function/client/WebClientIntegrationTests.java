@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,7 +18,9 @@ package org.springframework.web.reactive.function.client;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.time.Duration;
 import java.util.Arrays;
@@ -56,7 +58,11 @@ import org.springframework.http.client.reactive.JettyClientHttpConnector;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.http.codec.Pojo;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Integration tests using an {@link ExchangeFunction} through {@link WebClient}.
@@ -402,26 +408,29 @@ public class WebClientIntegrationTests {
 		prepareResponse(response -> {});
 
 		Resource resource = new ClassPathResource("largeTextFile.txt", getClass());
-		byte[] expected = Files.readAllBytes(resource.getFile().toPath());
 		Flux<DataBuffer> body = DataBufferUtils.read(resource, new DefaultDataBufferFactory(), 4096);
 
-		this.webClient.post()
+		Mono<Void> result = this.webClient.post()
 				.uri("/")
 				.body(body, DataBuffer.class)
 				.retrieve()
-				.bodyToMono(Void.class)
-				.block(Duration.ofSeconds(5));
+				.bodyToMono(Void.class);
+
+		StepVerifier.create(result)
+				.expectComplete()
+				.verify(Duration.ofSeconds(5));
 
 		expectRequest(request -> {
-			ByteArrayOutputStream actual = new ByteArrayOutputStream();
+			ByteArrayOutputStream bos = new ByteArrayOutputStream();
 			try {
-				request.getBody().copyTo(actual);
+				request.getBody().copyTo(bos);
+				String actual = bos.toString("UTF-8");
+				String expected = new String(Files.readAllBytes(resource.getFile().toPath()), StandardCharsets.UTF_8);
+				assertEquals(expected, actual);
 			}
 			catch (IOException ex) {
-				throw new IllegalStateException(ex);
+				throw new UncheckedIOException(ex);
 			}
-			assertEquals(expected.length, actual.size());
-			assertEquals(hash(expected), hash(actual.toByteArray()));
 		});
 	}
 
@@ -593,6 +602,28 @@ public class WebClientIntegrationTests {
 				.uri("/greeting?name=Spring")
 				.retrieve()
 				.onStatus(HttpStatus::is5xxServerError, response -> Mono.just(new MyException("500 error!")))
+				.bodyToMono(String.class);
+
+		StepVerifier.create(result)
+				.expectError(MyException.class)
+				.verify(Duration.ofSeconds(3));
+
+		expectRequestCount(1);
+		expectRequest(request -> {
+			assertEquals("*/*", request.getHeader(HttpHeaders.ACCEPT));
+			assertEquals("/greeting?name=Spring", request.getPath());
+		});
+	}
+
+	@Test
+	public void shouldApplyCustomRawStatusHandler() {
+		prepareResponse(response -> response.setResponseCode(500)
+				.setHeader("Content-Type", "text/plain").setBody("Internal Server error"));
+
+		Mono<String> result = this.webClient.get()
+				.uri("/greeting?name=Spring")
+				.retrieve()
+				.onRawStatus(value -> value >= 500 && value < 600, response -> Mono.just(new MyException("500 error!")))
 				.bodyToMono(String.class);
 
 		StepVerifier.create(result)

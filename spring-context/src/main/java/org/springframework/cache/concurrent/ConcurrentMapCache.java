@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -141,7 +141,7 @@ public class ConcurrentMapCache extends AbstractValueAdaptingCache {
 	@Override
 	@Nullable
 	public <T> T get(Object key, Callable<T> valueLoader) {
-		return (T) fromStoreValue(this.store.computeIfAbsent(key, r -> {
+		return (T) fromStoreValue(this.store.computeIfAbsent(key, k -> {
 			try {
 				return toStoreValue(valueLoader.call());
 			}
@@ -191,7 +191,7 @@ public class ConcurrentMapCache extends AbstractValueAdaptingCache {
 	}
 
 	private Object serializeValue(SerializationDelegate serialization, Object storeValue) throws IOException {
-		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		ByteArrayOutputStream out = new ByteArrayOutputStream(1024);
 		try {
 			serialization.serialize(storeValue, out);
 			return out.toByteArray();

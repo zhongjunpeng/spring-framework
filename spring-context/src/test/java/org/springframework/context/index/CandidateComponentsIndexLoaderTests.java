@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -92,7 +92,7 @@ public class CandidateComponentsIndexLoaderTests {
 	}
 
 	@Test
-	public void loadIndexNoEntry() throws IOException {
+	public void loadIndexNoEntry() {
 		CandidateComponentsIndex index = CandidateComponentsIndexLoader.loadIndex(
 				CandidateComponentsTestClassLoader.index(getClass().getClassLoader(),
 						new ClassPathResource("empty-spring.components", getClass())));
@@ -100,7 +100,7 @@ public class CandidateComponentsIndexLoaderTests {
 	}
 
 	@Test
-	public void loadIndexWithException() throws IOException {
+	public void loadIndexWithException() {
 		final IOException cause = new IOException("test exception");
 		this.thrown.expect(IllegalStateException.class);
 		this.thrown.expectMessage("Unable to load indexes");

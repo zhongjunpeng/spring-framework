@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,6 +22,7 @@ import java.security.Principal;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+
 import javax.xml.bind.annotation.XmlRootElement;
 
 import com.google.protobuf.Message;
@@ -350,10 +351,10 @@ public class WebFluxConfigurationSupportTests {
 		@Override
 		protected void configureHttpMessageCodecs(ServerCodecConfigurer configurer) {
 			configurer.registerDefaults(false);
-			configurer.customCodecs().decoder(StringDecoder.textPlainOnly());
-			configurer.customCodecs().decoder(new Jaxb2XmlDecoder());
-			configurer.customCodecs().encoder(CharSequenceEncoder.textPlainOnly());
-			configurer.customCodecs().encoder(new Jaxb2XmlEncoder());
+			configurer.customCodecs().register(StringDecoder.textPlainOnly());
+			configurer.customCodecs().register(new Jaxb2XmlDecoder());
+			configurer.customCodecs().register(CharSequenceEncoder.textPlainOnly());
+			configurer.customCodecs().register(new Jaxb2XmlEncoder());
 		}
 	}
 

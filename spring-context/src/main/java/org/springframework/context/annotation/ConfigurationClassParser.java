@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -531,15 +531,13 @@ class ConfigurationClassParser {
 		if (visited.add(sourceClass)) {
 			for (SourceClass annotation : sourceClass.getAnnotations()) {
 				String annName = annotation.getMetadata().getClassName();
-				if (!annName.startsWith("java") && !annName.equals(Import.class.getName())) {
+				if (!annName.equals(Import.class.getName())) {
 					collectImports(annotation, imports, visited);
 				}
 			}
 			imports.addAll(sourceClass.getAnnotationAttributes(Import.class.getName(), "value"));
 		}
 	}
-
-
 
 	private void processImports(ConfigurationClass configClass, SourceClass currentSourceClass,
 			Collection<SourceClass> importCandidates, boolean checkForCircularImports) {
@@ -562,8 +560,7 @@ class ConfigurationClassParser {
 						ParserStrategyUtils.invokeAwareMethods(
 								selector, this.environment, this.resourceLoader, this.registry);
 						if (selector instanceof DeferredImportSelector) {
-							this.deferredImportSelectorHandler.handle(
-									configClass, (DeferredImportSelector) selector);
+							this.deferredImportSelectorHandler.handle(configClass, (DeferredImportSelector) selector);
 						}
 						else {
 							String[] importClassNames = selector.selectImports(currentSourceClass.getMetadata());
@@ -751,8 +748,7 @@ class ConfigurationClassParser {
 		 * @param importSelector the selector to handle
 		 */
 		public void handle(ConfigurationClass configClass, DeferredImportSelector importSelector) {
-			DeferredImportSelectorHolder holder = new DeferredImportSelectorHolder(
-					configClass, importSelector);
+			DeferredImportSelectorHolder holder = new DeferredImportSelectorHolder(configClass, importSelector);
 			if (this.deferredImportSelectors == null) {
 				DeferredImportSelectorGroupingHandler handler = new DeferredImportSelectorGroupingHandler();
 				handler.register(holder);
@@ -778,7 +774,6 @@ class ConfigurationClassParser {
 				this.deferredImportSelectors = new ArrayList<>();
 			}
 		}
-
 	}
 
 
@@ -789,8 +784,7 @@ class ConfigurationClassParser {
 		private final Map<AnnotationMetadata, ConfigurationClass> configurationClasses = new HashMap<>();
 
 		public void register(DeferredImportSelectorHolder deferredImport) {
-			Class<? extends Group> group = deferredImport.getImportSelector()
-					.getImportGroup();
+			Class<? extends Group> group = deferredImport.getImportSelector().getImportGroup();
 			DeferredImportSelectorGrouping grouping = this.groupings.computeIfAbsent(
 					(group != null ? group : deferredImport),
 					key -> new DeferredImportSelectorGrouping(createGroup(group)));
@@ -802,8 +796,7 @@ class ConfigurationClassParser {
 		public void processGroupImports() {
 			for (DeferredImportSelectorGrouping grouping : this.groupings.values()) {
 				grouping.getImports().forEach(entry -> {
-					ConfigurationClass configurationClass = this.configurationClasses.get(
-							entry.getMetadata());
+					ConfigurationClass configurationClass = this.configurationClasses.get(entry.getMetadata());
 					try {
 						processImports(configurationClass, asSourceClass(configurationClass),
 								asSourceClasses(entry.getImportClassName()), false);
@@ -821,8 +814,7 @@ class ConfigurationClassParser {
 		}
 
 		private Group createGroup(@Nullable Class<? extends Group> type) {
-			Class<? extends Group> effectiveType = (type != null ? type
-					: DefaultDeferredImportSelectorGroup.class);
+			Class<? extends Group> effectiveType = (type != null ? type : DefaultDeferredImportSelectorGroup.class);
 			Group group = BeanUtils.instantiateClass(effectiveType);
 			ParserStrategyUtils.invokeAwareMethods(group,
 					ConfigurationClassParser.this.environment,
@@ -830,7 +822,6 @@ class ConfigurationClassParser {
 					ConfigurationClassParser.this.registry);
 			return group;
 		}
-
 	}
 
 
@@ -1016,13 +1007,32 @@ class ConfigurationClassParser {
 
 		public Set<SourceClass> getAnnotations() {
 			Set<SourceClass> result = new LinkedHashSet<>();
-			for (String className : this.metadata.getAnnotationTypes()) {
-				try {
-					result.add(getRelated(className));
+			if (this.source instanceof Class) {
+				Class<?> sourceClass = (Class<?>) this.source;
+				for (Annotation ann : sourceClass.getAnnotations()) {
+					Class<?> annType = ann.annotationType();
+					if (!annType.getName().startsWith("java")) {
+						try {
+							result.add(asSourceClass(annType));
+						}
+						catch (Throwable ex) {
+							// An annotation not present on the classpath is being ignored
+							// by the JVM's class loading -> ignore here as well.
+						}
+					}
 				}
-				catch (Throwable ex) {
-					// An annotation not present on the classpath is being ignored
-					// by the JVM's class loading -> ignore here as well.
+			}
+			else {
+				for (String className : this.metadata.getAnnotationTypes()) {
+					if (!className.startsWith("java")) {
+						try {
+							result.add(getRelated(className));
+						}
+						catch (Throwable ex) {
+							// An annotation not present on the classpath is being ignored
+							// by the JVM's class loading -> ignore here as well.
+						}
+					}
 				}
 			}
 			return result;

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,25 +16,24 @@
 
 package org.springframework.web.servlet.view.feed;
 
-import com.rometools.rome.feed.rss.Channel;
-import com.rometools.rome.feed.rss.Description;
-import com.rometools.rome.feed.rss.Item;
-
-import org.junit.Test;
-
-import org.springframework.mock.web.test.MockHttpServletRequest;
-import org.springframework.mock.web.test.MockHttpServletResponse;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.xmlunit.matchers.CompareMatcher.isSimilarTo;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import com.rometools.rome.feed.rss.Channel;
+import com.rometools.rome.feed.rss.Description;
+import com.rometools.rome.feed.rss.Item;
+import org.junit.Test;
+
+import org.springframework.mock.web.test.MockHttpServletRequest;
+import org.springframework.mock.web.test.MockHttpServletResponse;
+
+import static org.junit.Assert.*;
+import static org.xmlunit.matchers.CompareMatcher.*;
 
 /**
  * @author Arjen Poutsma
@@ -57,7 +56,7 @@ public class RssFeedViewTests {
 		assertEquals("Invalid content-type", "application/rss+xml", response.getContentType());
 		String expected = "<rss version=\"2.0\">" +
 				"<channel><title>Test Feed</title>" +
-				"<link>http://example.com</link>" +
+				"<link>https://example.com</link>" +
 				"<description>Test feed description</description>" +
 				"<item><title>2</title><description>This is entry 2</description></item>" +
 				"<item><title>1</title><description>This is entry 1</description></item>" +
@@ -72,7 +71,7 @@ public class RssFeedViewTests {
 		protected void buildFeedMetadata(Map<String, Object> model, Channel channel, HttpServletRequest request) {
 			channel.setTitle("Test Feed");
 			channel.setDescription("Test feed description");
-			channel.setLink("http://example.com");
+			channel.setLink("https://example.com");
 		}
 
 		@Override

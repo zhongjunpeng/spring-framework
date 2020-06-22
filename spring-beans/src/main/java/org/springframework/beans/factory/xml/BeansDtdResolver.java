@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -16,6 +16,7 @@
 
 package org.springframework.beans.factory.xml;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import org.apache.commons.logging.Log;
@@ -34,7 +35,7 @@ import org.springframework.lang.Nullable;
  * <p>Fetches "spring-beans.dtd" from the class path resource
  * "/org/springframework/beans/factory/xml/spring-beans.dtd",
  * no matter whether specified as some local URL that includes "spring-beans"
- * in the DTD name or as "http://www.springframework.org/dtd/spring-beans-2.0.dtd".
+ * in the DTD name or as "https://www.springframework.org/dtd/spring-beans-2.0.dtd".
  *
  * @author Juergen Hoeller
  * @author Colin Sampaleanu
@@ -52,7 +53,7 @@ public class BeansDtdResolver implements EntityResolver {
 
 	@Override
 	@Nullable
-	public InputSource resolveEntity(String publicId, @Nullable String systemId) throws IOException {
+	public InputSource resolveEntity(@Nullable String publicId, @Nullable String systemId) throws IOException {
 		if (logger.isTraceEnabled()) {
 			logger.trace("Trying to resolve XML entity with public ID [" + publicId +
 					"] and system ID [" + systemId + "]");
@@ -76,7 +77,7 @@ public class BeansDtdResolver implements EntityResolver {
 					}
 					return source;
 				}
-				catch (IOException ex) {
+				catch (FileNotFoundException ex) {
 					if (logger.isDebugEnabled()) {
 						logger.debug("Could not resolve beans DTD [" + systemId + "]: not found in classpath", ex);
 					}

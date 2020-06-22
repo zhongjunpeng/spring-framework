@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,6 +18,7 @@ package org.springframework.http.converter.json;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -63,12 +64,16 @@ public class MappingJackson2HttpMessageConverterTests {
 	public void canRead() {
 		assertTrue(converter.canRead(MyBean.class, new MediaType("application", "json")));
 		assertTrue(converter.canRead(Map.class, new MediaType("application", "json")));
+		assertTrue(converter.canRead(MyBean.class, new MediaType("application", "json", StandardCharsets.UTF_8)));
+		assertTrue(converter.canRead(MyBean.class, new MediaType("application", "json", StandardCharsets.ISO_8859_1)));
 	}
 
 	@Test
 	public void canWrite() {
 		assertTrue(converter.canWrite(MyBean.class, new MediaType("application", "json")));
 		assertTrue(converter.canWrite(Map.class, new MediaType("application", "json")));
+		assertTrue(converter.canWrite(MyBean.class, new MediaType("application", "json", StandardCharsets.UTF_8)));
+		assertFalse(converter.canWrite(MyBean.class, new MediaType("application", "json", StandardCharsets.ISO_8859_1)));
 	}
 
 	@Test  // SPR-7905
@@ -435,7 +440,7 @@ public class MappingJackson2HttpMessageConverterTests {
 	@Test
 	public void readWithNoDefaultConstructor() throws Exception {
 		String body = "{\"property1\":\"foo\",\"property2\":\"bar\"}";
-		MockHttpInputMessage inputMessage = new MockHttpInputMessage(body.getBytes("UTF-8"));
+		MockHttpInputMessage inputMessage = new MockHttpInputMessage(body.getBytes(StandardCharsets.UTF_8));
 		inputMessage.getHeaders().setContentType(new MediaType("application", "json"));
 		try {
 			converter.read(BeanWithNoDefaultConstructor.class, inputMessage);
@@ -445,6 +450,19 @@ public class MappingJackson2HttpMessageConverterTests {
 			return;
 		}
 		fail();
+	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void readNonUnicode() throws Exception {
+		String body = "{\"føø\":\"bår\"}";
+		Charset charset = StandardCharsets.ISO_8859_1;
+		MockHttpInputMessage inputMessage = new MockHttpInputMessage(body.getBytes(charset));
+		inputMessage.getHeaders().setContentType(new MediaType("application", "json", charset));
+		HashMap<String, Object> result = (HashMap<String, Object>) this.converter.read(HashMap.class, inputMessage);
+
+		assertEquals(1, result.size());
+		assertEquals("bår", result.get("føø"));
 	}
 
 

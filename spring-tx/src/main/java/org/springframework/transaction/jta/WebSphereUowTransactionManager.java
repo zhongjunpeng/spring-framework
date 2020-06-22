@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,6 +17,7 @@
 package org.springframework.transaction.jta;
 
 import java.util.List;
+
 import javax.naming.NamingException;
 
 import com.ibm.websphere.uow.UOWSynchronizationRegistry;
@@ -297,14 +298,14 @@ public class WebSphereUowTransactionManager extends JtaTransactionManager
 		SuspendedResourcesHolder suspendedResources = (!joinTx ? suspend(null) : null);
 		UOWActionAdapter<T> action = null;
 		try {
-			if (definition.getTimeout() > TransactionDefinition.TIMEOUT_DEFAULT) {
+			boolean actualTransaction = (uowType == UOWManager.UOW_TYPE_GLOBAL_TRANSACTION);
+			if (actualTransaction && definition.getTimeout() > TransactionDefinition.TIMEOUT_DEFAULT) {
 				uowManager.setUOWTimeout(uowType, definition.getTimeout());
 			}
 			if (debug) {
 				logger.debug("Invoking WebSphere UOW action: type=" + uowType + ", join=" + joinTx);
 			}
-			action = new UOWActionAdapter<>(
-					definition, callback, (uowType == UOWManager.UOW_TYPE_GLOBAL_TRANSACTION), !joinTx, newSynch, debug);
+			action = new UOWActionAdapter<>(definition, callback, actualTransaction, !joinTx, newSynch, debug);
 			uowManager.runUnderUOW(uowType, joinTx, action);
 			if (debug) {
 				logger.debug("Returned from WebSphere UOW action: type=" + uowType + ", join=" + joinTx);

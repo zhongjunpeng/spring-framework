@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -20,6 +20,7 @@ import java.io.ByteArrayInputStream;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Collections;
+
 import javax.servlet.AsyncContext;
 import javax.servlet.ReadListener;
 import javax.servlet.ServletInputStream;
@@ -41,6 +42,7 @@ import static org.mockito.Mockito.*;
  * Unit tests for {@link AbstractServerHttpRequest}.
  *
  * @author Rossen Stoyanchev
+ * @author Sam Brannen
  */
 public class ServerHttpRequestTests {
 
@@ -88,7 +90,6 @@ public class ServerHttpRequestTests {
 
 	@Test
 	public void mutateRequest() throws Exception {
-
 		SslInfo sslInfo = mock(SslInfo.class);
 		ServerHttpRequest request = createHttpRequest("/").mutate().sslInfo(sslInfo).build();
 		assertSame(sslInfo, request.getSslInfo());
@@ -96,16 +97,16 @@ public class ServerHttpRequestTests {
 		request = createHttpRequest("/").mutate().method(HttpMethod.DELETE).build();
 		assertEquals(HttpMethod.DELETE, request.getMethod());
 
-		String baseUri = "http://aaa.org:8080/a";
+		String baseUri = "http://www.aaa.org/articles/";
 
 		request = createHttpRequest(baseUri).mutate().uri(URI.create("http://bbb.org:9090/b")).build();
 		assertEquals("http://bbb.org:9090/b", request.getURI().toString());
 
 		request = createHttpRequest(baseUri).mutate().path("/b/c/d").build();
-		assertEquals("http://aaa.org:8080/b/c/d", request.getURI().toString());
+		assertEquals("http://www.aaa.org/b/c/d", request.getURI().toString());
 
 		request = createHttpRequest(baseUri).mutate().path("/app/b/c/d").contextPath("/app").build();
-		assertEquals("http://aaa.org:8080/app/b/c/d", request.getURI().toString());
+		assertEquals("http://www.aaa.org/app/b/c/d", request.getURI().toString());
 		assertEquals("/app", request.getPath().contextPath().value());
 	}
 
@@ -121,6 +122,54 @@ public class ServerHttpRequestTests {
 
 		assertEquals("/mutatedPath", request.getURI().getRawPath());
 		assertEquals("name=%E6%89%8E%E6%A0%B9", request.getURI().getRawQuery());
+	}
+
+	@Test
+	@SuppressWarnings("deprecation")
+	public void mutateHeaderByAddingHeaderValues() throws Exception {
+		String headerName = "key";
+		String headerValue1 = "value1";
+		String headerValue2 = "value2";
+
+		ServerHttpRequest request = createHttpRequest("/path");
+		assertNull(request.getHeaders().get(headerName));
+
+		request = request.mutate().header(headerName, headerValue1).build();
+
+		assertNotNull(request.getHeaders().get(headerName));
+		assertEquals(1, request.getHeaders().get(headerName).size());
+		assertEquals(headerValue1, request.getHeaders().get(headerName).get(0));
+
+		request = request.mutate().header(headerName, headerValue2).build();
+
+		assertNotNull(request.getHeaders().get(headerName));
+		assertEquals(2, request.getHeaders().get(headerName).size());
+		assertEquals(headerValue1, request.getHeaders().get(headerName).get(0));
+		assertEquals(headerValue2, request.getHeaders().get(headerName).get(1));
+	}
+
+	@Test
+	public void mutateHeaderBySettingHeaderValues() throws Exception {
+		String headerName = "key";
+		String headerValue1 = "value1";
+		String headerValue2 = "value2";
+		String headerValue3 = "value3";
+
+		ServerHttpRequest request = createHttpRequest("/path");
+		assertNull(request.getHeaders().get(headerName));
+
+		request = request.mutate().header(headerName, headerValue1, headerValue2).build();
+
+		assertNotNull(request.getHeaders().get(headerName));
+		assertEquals(2, request.getHeaders().get(headerName).size());
+		assertEquals(headerValue1, request.getHeaders().get(headerName).get(0));
+		assertEquals(headerValue2, request.getHeaders().get(headerName).get(1));
+
+		request = request.mutate().header(headerName, new String[] { headerValue3 }).build();
+
+		assertNotNull(request.getHeaders().get(headerName));
+		assertEquals(1, request.getHeaders().get(headerName).size());
+		assertEquals(headerValue3, request.getHeaders().get(headerName).get(0));
 	}
 
 	private ServerHttpRequest createHttpRequest(String uriString) throws Exception {

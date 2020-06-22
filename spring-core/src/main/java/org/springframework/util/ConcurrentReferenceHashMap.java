@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -829,7 +829,7 @@ public class ConcurrentReferenceHashMap<K, V> extends AbstractMap<K, V> implemen
 
 
 	/**
-	 * Allows a task access to {@link Segment} entries.
+	 * Allows a task access to {@link ConcurrentReferenceHashMap.Segment} entries.
 	 */
 	private abstract class Entries {
 
@@ -980,8 +980,8 @@ public class ConcurrentReferenceHashMap<K, V> extends AbstractMap<K, V> implemen
 
 
 	/**
-	 * Strategy class used to manage {@link Reference References}. This class can be overridden if
-	 * alternative reference types need to be supported.
+	 * Strategy class used to manage {@link Reference References}.
+	 * This class can be overridden if alternative reference types need to be supported.
 	 */
 	protected class ReferenceManager {
 

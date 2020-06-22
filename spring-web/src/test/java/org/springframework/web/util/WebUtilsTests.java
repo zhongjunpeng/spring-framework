@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
 import javax.servlet.http.HttpServletRequest;
 
 import org.junit.Test;
@@ -116,11 +117,11 @@ public class WebUtilsTests {
 		assertFalse(checkSameOrigin("http", "mydomain1.com", -1, "http://mydomain2.com"));
 		assertFalse(checkSameOrigin("http", "mydomain1.com", -1, "https://mydomain1.com"));
 		assertFalse(checkSameOrigin("http", "mydomain1.com", -1, "invalid-origin"));
-		assertFalse(checkSameOrigin("https", "mydomain1.com", -1, "http://mydomain1.com"));
+		assertFalse(checkSameOrigin("https", "mydomain1.com", -1, "https://mydomain1.com"));
 
 		// Handling of invalid origins as described in SPR-13478
 		assertTrue(checkSameOrigin("http", "mydomain1.com", -1, "http://mydomain1.com/"));
-		assertTrue(checkSameOrigin("http", "mydomain1.com", -1, "http://mydomain1.com:80/"));
+		assertTrue(checkSameOrigin("http", "mydomain1.com", -1, "http://mydomain1.com:80"));
 		assertTrue(checkSameOrigin("http", "mydomain1.com", -1, "http://mydomain1.com/path"));
 		assertTrue(checkSameOrigin("http", "mydomain1.com", -1, "http://mydomain1.com:80/path"));
 		assertFalse(checkSameOrigin("http", "mydomain2.com", -1, "http://mydomain1.com/"));

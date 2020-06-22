@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,7 +18,6 @@ package org.springframework.web.reactive.function.client;
 
 import java.nio.charset.StandardCharsets;
 
-import org.junit.Before;
 import org.junit.Test;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
@@ -30,19 +29,17 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseCookie;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 
 /**
  * @author Arjen Poutsma
  */
 public class DefaultClientResponseBuilderTests {
 
-	private DataBufferFactory dataBufferFactory;
+	private final DataBufferFactory dataBufferFactory = new DefaultDataBufferFactory();
 
-	@Before
-	public void createBufferFactory() {
-		this.dataBufferFactory = new DefaultDataBufferFactory();
-	}
 
 	@Test
 	public void normal() {
@@ -100,5 +97,19 @@ public class DefaultClientResponseBuilderTests {
 				.verifyComplete();
 	}
 
+	@Test
+	public void fromCustomStatus() {
+		ClientResponse other = ClientResponse.create(499, ExchangeStrategies.withDefaults()).build();
+		ClientResponse result = ClientResponse.from(other).build();
+		assertEquals(499, result.rawStatusCode());
+
+		try {
+			result.statusCode();
+			fail("Expected IllegalArgumentException");
+		}
+		catch (IllegalArgumentException ex) {
+			// expected
+		}
+	}
 
 }

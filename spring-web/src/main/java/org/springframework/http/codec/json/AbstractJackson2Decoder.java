@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2019 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,11 +18,13 @@ package org.springframework.http.codec.json;
 
 import java.io.IOException;
 import java.lang.annotation.Annotation;
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
@@ -38,6 +40,7 @@ import org.springframework.core.codec.CodecException;
 import org.springframework.core.codec.DecodingException;
 import org.springframework.core.codec.Hints;
 import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.core.io.buffer.DataBufferLimitException;
 import org.springframework.core.log.LogFormatUtils;
 import org.springframework.http.codec.HttpMessageDecoder;
 import org.springframework.http.server.reactive.ServerHttpRequest;
@@ -57,6 +60,9 @@ import org.springframework.util.MimeType;
  */
 public abstract class AbstractJackson2Decoder extends Jackson2CodecSupport implements HttpMessageDecoder<Object> {
 
+	private int maxInMemorySize = -1;
+
+
 	/**
 	 * Until https://github.com/FasterXML/jackson-core/issues/476 is resolved,
 	 * we need to ensure buffer recycling is off.
@@ -74,6 +80,29 @@ public abstract class AbstractJackson2Decoder extends Jackson2CodecSupport imple
 	}
 
 
+	/**
+	 * Set the max number of bytes that can be buffered by this decoder. This
+	 * is either the size of the entire input when decoding as a whole, or the
+	 * size of one top-level JSON object within a JSON stream. When the limit
+	 * is exceeded, {@link DataBufferLimitException} is raised.
+	 * <p>By default in 5.1 this is set to -1, unlimited. In 5.2 the default
+	 * value for this limit is set to 256K.
+	 * @param byteCount the max number of bytes to buffer, or -1 for unlimited
+	 * @since 5.1.11
+	 */
+	public void setMaxInMemorySize(int byteCount) {
+		this.maxInMemorySize = byteCount;
+	}
+
+	/**
+	 * Return the {@link #setMaxInMemorySize configured} byte count limit.
+	 * @since 5.1.11
+	 */
+	public int getMaxInMemorySize() {
+		return this.maxInMemorySize;
+	}
+
+
 	@Override
 	public boolean canDecode(ResolvableType elementType, @Nullable MimeType mimeType) {
 		JavaType javaType = getObjectMapper().getTypeFactory().constructType(elementType.getType());
@@ -86,15 +115,46 @@ public abstract class AbstractJackson2Decoder extends Jackson2CodecSupport imple
 	public Flux<Object> decode(Publisher<DataBuffer> input, ResolvableType elementType,
 			@Nullable MimeType mimeType, @Nullable Map<String, Object> hints) {
 
-		Flux<TokenBuffer> tokens = Jackson2Tokenizer.tokenize(Flux.from(input), this.jsonFactory, true);
+		boolean forceUseOfBigDecimal = getObjectMapper().isEnabled(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS);
+		if (BigDecimal.class.equals(elementType.getType())) {
+			forceUseOfBigDecimal = true;
+		}
+
+		Flux<DataBuffer> processed = processInput(input, elementType, mimeType, hints);
+		Flux<TokenBuffer> tokens = Jackson2Tokenizer.tokenize(processed, this.jsonFactory, getObjectMapper(),
+				true, forceUseOfBigDecimal, getMaxInMemorySize());
 		return decodeInternal(tokens, elementType, mimeType, hints);
+	}
+
+	/**
+	 * Process the input publisher into a flux. Default implementation returns
+	 * {@link Flux#from(Publisher)}, but subclasses can choose to to customize
+	 * this behaviour.
+	 * @param input the {@code DataBuffer} input stream to process
+	 * @param elementType the expected type of elements in the output stream
+	 * @param mimeType the MIME type associated with the input stream (optional)
+	 * @param hints additional information about how to do encode
+	 * @return the processed flux
+	 * @since 5.1.14
+	 */
+	protected Flux<DataBuffer> processInput(Publisher<DataBuffer> input, ResolvableType elementType,
+				@Nullable MimeType mimeType, @Nullable Map<String, Object> hints) {
+
+		return Flux.from(input);
 	}
 
 	@Override
 	public Mono<Object> decodeToMono(Publisher<DataBuffer> input, ResolvableType elementType,
 			@Nullable MimeType mimeType, @Nullable Map<String, Object> hints) {
 
-		Flux<TokenBuffer> tokens = Jackson2Tokenizer.tokenize(Flux.from(input), this.jsonFactory, false);
+		boolean forceUseOfBigDecimal = getObjectMapper().isEnabled(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS);
+		if (BigDecimal.class.equals(elementType.getType())) {
+			forceUseOfBigDecimal = true;
+		}
+
+		Flux<DataBuffer> processed = processInput(input, elementType, mimeType, hints);
+		Flux<TokenBuffer> tokens = Jackson2Tokenizer.tokenize(processed, this.jsonFactory, getObjectMapper(),
+				false, forceUseOfBigDecimal, getMaxInMemorySize());
 		return decodeInternal(tokens, elementType, mimeType, hints).singleOrEmpty();
 	}
 
@@ -137,7 +197,7 @@ public abstract class AbstractJackson2Decoder extends Jackson2CodecSupport imple
 	}
 
 
-	// HttpMessageDecoder...
+	// HttpMessageDecoder
 
 	@Override
 	public Map<String, Object> getDecodeHints(ResolvableType actualType, ResolvableType elementType,
@@ -151,7 +211,8 @@ public abstract class AbstractJackson2Decoder extends Jackson2CodecSupport imple
 		return getMimeTypes();
 	}
 
-	// Jackson2CodecSupport ...
+
+	// Jackson2CodecSupport
 
 	@Override
 	protected <A extends Annotation> A getAnnotation(MethodParameter parameter, Class<A> annotType) {

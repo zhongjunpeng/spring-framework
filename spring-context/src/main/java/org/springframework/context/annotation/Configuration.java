@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -344,15 +344,16 @@ import org.springframework.stereotype.Component;
  *
  * <p>By default, {@code @Bean} methods will be <em>eagerly instantiated</em> at container
  * bootstrap time.  To avoid this, {@code @Configuration} may be used in conjunction with
- * the {@link Lazy @Lazy} annotation to indicate that all {@code @Bean} methods declared within
- * the class are by default lazily initialized. Note that {@code @Lazy} may be used on
- * individual {@code @Bean} methods as well.
+ * the {@link Lazy @Lazy} annotation to indicate that all {@code @Bean} methods declared
+ * within the class are by default lazily initialized. Note that {@code @Lazy} may be used
+ * on individual {@code @Bean} methods as well.
  *
  * <h2>Testing support for {@code @Configuration} classes</h2>
  *
  * <p>The Spring <em>TestContext framework</em> available in the {@code spring-test} module
  * provides the {@code @ContextConfiguration} annotation which can accept an array of
- * {@code @Configuration} {@code Class} objects:
+ * <em>component class</em> references &mdash; typically {@code @Configuration} or
+ * {@code @Component} classes.
  *
  * <pre class="code">
  * &#064;RunWith(SpringRunner.class)
@@ -430,7 +431,7 @@ public @interface Configuration {
 	 * is registered as a traditional XML bean definition, the name/id of the bean
 	 * element will take precedence.
 	 * @return the explicit component name, if any (or empty String otherwise)
-	 * @see org.springframework.beans.factory.support.DefaultBeanNameGenerator
+	 * @see AnnotationBeanNameGenerator
 	 */
 	@AliasFor(annotation = Component.class)
 	String value() default "";

@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  *  Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -336,7 +336,15 @@ public class ReflectUtils {
 	public static Constructor getConstructor(Class type, Class[] parameterTypes) {
 		try {
 			Constructor constructor = type.getDeclaredConstructor(parameterTypes);
-			constructor.setAccessible(true);
+			if (System.getSecurityManager() != null) {
+				AccessController.doPrivileged((PrivilegedAction<Object>) () -> {
+					constructor.setAccessible(true);
+					return null;
+				});
+			}
+			else {
+				constructor.setAccessible(true);
+			}
 			return constructor;
 		}
 		catch (NoSuchMethodException e) {

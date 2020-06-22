@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -29,6 +29,8 @@ import reactor.core.publisher.Mono;
 
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferFactory;
+import org.springframework.core.io.buffer.DataBufferUtils;
+import org.springframework.core.io.buffer.PooledDataBuffer;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpLogging;
 import org.springframework.http.HttpStatus;
@@ -107,7 +109,7 @@ public abstract class AbstractServerHttpResponse implements ServerHttpResponse {
 	@Override
 	@Nullable
 	public HttpStatus getStatusCode() {
-		return this.statusCode != null ? HttpStatus.resolve(this.statusCode) : null;
+		return (this.statusCode != null ? HttpStatus.resolve(this.statusCode) : null);
 	}
 
 	/**
@@ -173,16 +175,22 @@ public abstract class AbstractServerHttpResponse implements ServerHttpResponse {
 	}
 
 	@Override
+	@SuppressWarnings("unchecked")
 	public final Mono<Void> writeWith(Publisher<? extends DataBuffer> body) {
-		return new ChannelSendOperator<>(body,
-				writePublisher -> doCommit(() -> writeWithInternal(writePublisher)))
+		// Write as Mono if possible as an optimization hint to Reactor Netty
+		// ChannelSendOperator not necessary for Mono
+		if (body instanceof Mono) {
+			return ((Mono<? extends DataBuffer>) body).flatMap(buffer ->
+					doCommit(() -> writeWithInternal(Mono.just(buffer)))
+							.doOnDiscard(PooledDataBuffer.class, DataBufferUtils::release));
+		}
+		return new ChannelSendOperator<>(body, inner -> doCommit(() -> writeWithInternal(inner)))
 				.doOnError(t -> removeContentLength());
 	}
 
 	@Override
 	public final Mono<Void> writeAndFlushWith(Publisher<? extends Publisher<? extends DataBuffer>> body) {
-		return new ChannelSendOperator<>(body,
-				writePublisher -> doCommit(() -> writeAndFlushWithInternal(writePublisher)))
+		return new ChannelSendOperator<>(body, inner -> doCommit(() -> writeAndFlushWithInternal(inner)))
 				.doOnError(t -> removeContentLength());
 	}
 
@@ -254,8 +262,13 @@ public abstract class AbstractServerHttpResponse implements ServerHttpResponse {
 	protected abstract void applyStatusCode();
 
 	/**
-	 * Apply header changes from {@link #getHeaders()} to the underlying response.
-	 * This method is called once only.
+	 * Invoked when the response is getting committed allowing sub-classes to
+	 * make apply header values to the underlying response.
+	 * <p>Note that most sub-classes use an {@link HttpHeaders} instance that
+	 * wraps an adapter to the native response headers such that changes are
+	 * propagated to the underlying response on the go. That means this callback
+	 * is typically not used other than for specialized updates such as setting
+	 * the contentType or characterEncoding fields in a Servlet response.
 	 */
 	protected abstract void applyHeaders();
 

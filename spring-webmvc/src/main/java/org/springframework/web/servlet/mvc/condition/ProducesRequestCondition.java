@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -22,6 +22,7 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+
 import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.http.MediaType;
@@ -46,8 +47,6 @@ import org.springframework.web.servlet.mvc.condition.HeadersRequestCondition.Hea
  * @since 3.1
  */
 public final class ProducesRequestCondition extends AbstractRequestCondition<ProducesRequestCondition> {
-
-	private static final ProducesRequestCondition PRE_FLIGHT_MATCH = new ProducesRequestCondition();
 
 	private static final ProducesRequestCondition EMPTY_CONDITION = new ProducesRequestCondition();
 
@@ -188,12 +187,11 @@ public final class ProducesRequestCondition extends AbstractRequestCondition<Pro
 	@Nullable
 	public ProducesRequestCondition getMatchingCondition(HttpServletRequest request) {
 		if (CorsUtils.isPreFlightRequest(request)) {
-			return PRE_FLIGHT_MATCH;
+			return EMPTY_CONDITION;
 		}
 		if (isEmpty()) {
 			return this;
 		}
-
 		List<MediaType> acceptedMediaTypes;
 		try {
 			acceptedMediaTypes = getAcceptedMediaTypes(request);
@@ -201,7 +199,6 @@ public final class ProducesRequestCondition extends AbstractRequestCondition<Pro
 		catch (HttpMediaTypeException ex) {
 			return null;
 		}
-
 		Set<ProduceMediaTypeExpression> result = new LinkedHashSet<>(this.expressions);
 		result.removeIf(expression -> !expression.match(acceptedMediaTypes));
 		if (!result.isEmpty()) {

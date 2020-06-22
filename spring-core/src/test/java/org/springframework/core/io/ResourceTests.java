@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,6 +17,7 @@
 package org.springframework.core.io;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -130,6 +131,14 @@ public class ResourceTests {
 	}
 
 	@Test
+	public void fileSystemResourceWithFile() throws IOException {
+		File file = new File(getClass().getResource("Resource.class").getFile());
+		Resource resource = new FileSystemResource(file);
+		doTestResource(resource);
+		assertEquals(new FileSystemResource(file), resource);
+	}
+
+	@Test
 	public void testFileSystemResourceWithFilePath() throws Exception {
 		Path filePath = Paths.get(getClass().getResource("Resource.class").toURI());
 		Resource resource = new FileSystemResource(filePath);
@@ -231,7 +240,7 @@ public class ResourceTests {
 
 	@Ignore @Test // this test is quite slow. TODO: re-enable with JUnit categories
 	public void testNonFileResourceExists() throws Exception {
-		Resource resource = new UrlResource("http://www.springframework.org");
+		Resource resource = new UrlResource("https://www.springframework.org");
 		assertTrue(resource.exists());
 	}
 

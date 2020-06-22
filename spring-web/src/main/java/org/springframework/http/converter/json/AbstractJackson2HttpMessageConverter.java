@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,12 +17,18 @@
 package org.springframework.http.converter.json;
 
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.lang.reflect.Type;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumSet;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.core.JsonEncoding;
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -33,6 +39,7 @@ import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.SerializationConfig;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -68,6 +75,8 @@ import org.springframework.util.TypeUtils;
  * @see MappingJackson2HttpMessageConverter
  */
 public abstract class AbstractJackson2HttpMessageConverter extends AbstractGenericHttpMessageConverter<Object> {
+
+	private static final Map<Charset, JsonEncoding> ENCODINGS = jsonEncodings();
 
 	/**
 	 * The default charset used by the converter.
@@ -172,6 +181,12 @@ public abstract class AbstractJackson2HttpMessageConverter extends AbstractGener
 		if (!canWrite(mediaType)) {
 			return false;
 		}
+		if (mediaType != null && mediaType.getCharset() != null) {
+			Charset charset = mediaType.getCharset();
+			if (!ENCODINGS.containsKey(charset)) {
+				return false;
+			}
+		}
 		AtomicReference<Throwable> causeRef = new AtomicReference<>();
 		if (this.objectMapper.canSerialize(clazz, causeRef)) {
 			return true;
@@ -228,21 +243,46 @@ public abstract class AbstractJackson2HttpMessageConverter extends AbstractGener
 	}
 
 	private Object readJavaType(JavaType javaType, HttpInputMessage inputMessage) throws IOException {
+		MediaType contentType = inputMessage.getHeaders().getContentType();
+		Charset charset = getCharset(contentType);
+
+		boolean isUnicode = ENCODINGS.containsKey(charset);
 		try {
 			if (inputMessage instanceof MappingJacksonInputMessage) {
 				Class<?> deserializationView = ((MappingJacksonInputMessage) inputMessage).getDeserializationView();
 				if (deserializationView != null) {
-					return this.objectMapper.readerWithView(deserializationView).forType(javaType).
-							readValue(inputMessage.getBody());
+					ObjectReader objectReader = this.objectMapper.readerWithView(deserializationView).forType(javaType);
+					if (isUnicode) {
+						return objectReader.readValue(inputMessage.getBody());
+					}
+					else {
+						Reader reader = new InputStreamReader(inputMessage.getBody(), charset);
+						return objectReader.readValue(reader);
+					}
 				}
 			}
-			return this.objectMapper.readValue(inputMessage.getBody(), javaType);
+			if (isUnicode) {
+				return this.objectMapper.readValue(inputMessage.getBody(), javaType);
+			}
+			else {
+				Reader reader = new InputStreamReader(inputMessage.getBody(), charset);
+				return this.objectMapper.readValue(reader, javaType);
+			}
 		}
 		catch (InvalidDefinitionException ex) {
 			throw new HttpMessageConversionException("Type definition error: " + ex.getType(), ex);
 		}
 		catch (JsonProcessingException ex) {
 			throw new HttpMessageNotReadableException("JSON parse error: " + ex.getOriginalMessage(), ex, inputMessage);
+		}
+	}
+
+	private static Charset getCharset(@Nullable MediaType contentType) {
+		if (contentType != null && contentType.getCharset() != null) {
+			return contentType.getCharset();
+		}
+		else {
+			return StandardCharsets.UTF_8;
 		}
 	}
 
@@ -333,10 +373,9 @@ public abstract class AbstractJackson2HttpMessageConverter extends AbstractGener
 	protected JsonEncoding getJsonEncoding(@Nullable MediaType contentType) {
 		if (contentType != null && contentType.getCharset() != null) {
 			Charset charset = contentType.getCharset();
-			for (JsonEncoding encoding : JsonEncoding.values()) {
-				if (charset.name().equals(encoding.getJavaName())) {
-					return encoding;
-				}
+			JsonEncoding encoding = ENCODINGS.get(charset);
+			if (encoding != null) {
+				return encoding;
 			}
 		}
 		return JsonEncoding.UTF8;
@@ -357,6 +396,11 @@ public abstract class AbstractJackson2HttpMessageConverter extends AbstractGener
 			object = ((MappingJacksonValue) object).getValue();
 		}
 		return super.getContentLength(object, contentType);
+	}
+
+	private static Map<Charset, JsonEncoding> jsonEncodings() {
+		return EnumSet.allOf(JsonEncoding.class).stream()
+				.collect(Collectors.toMap(encoding -> Charset.forName(encoding.getJavaName()), Function.identity()));
 	}
 
 }

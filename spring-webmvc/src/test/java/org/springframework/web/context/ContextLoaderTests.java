@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,6 +18,7 @@ package org.springframework.web.context;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+
 import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
@@ -87,7 +88,7 @@ public class ContextLoaderTests {
 
 	/**
 	 * Addresses the issues raised in <a
-	 * href="http://opensource.atlassian.com/projects/spring/browse/SPR-4008"
+	 * href="https://opensource.atlassian.com/projects/spring/browse/SPR-4008"
 	 * target="_blank">SPR-4008</a>: <em>Supply an opportunity to customize
 	 * context before calling refresh in ContextLoaders</em>.
 	 */

@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -26,6 +26,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.IntStream;
+
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.stream.XMLEventWriter;
@@ -187,13 +189,23 @@ public class XStreamMarshallerTests {
 	@Test
 	public void converters() throws Exception {
 		marshaller.setConverters(new EncodedByteArrayConverter());
-		byte[] buf = new byte[]{0x1, 0x2};
-		Writer writer = new StringWriter();
-		marshaller.marshal(buf, new StreamResult(writer));
-		assertThat(writer.toString(), isSimilarTo("<byte-array>AQI=</byte-array>"));
-		Reader reader = new StringReader(writer.toString());
-		byte[] bufResult = (byte[]) marshaller.unmarshal(new StreamSource(reader));
-		assertTrue("Invalid result", Arrays.equals(buf, bufResult));
+		byte[] buf = {0x1, 0x2};
+
+		// Execute multiple times concurrently to ensure there are no concurrency issues.
+		// See https://github.com/spring-projects/spring-framework/issues/25017
+		IntStream.rangeClosed(1, 100).parallel().forEach(n -> {
+			try {
+				Writer writer = new StringWriter();
+				marshaller.marshal(buf, new StreamResult(writer));
+				assertThat(writer.toString(), isSimilarTo("<byte-array>AQI=</byte-array>"));
+				Reader reader = new StringReader(writer.toString());
+				byte[] bufResult = (byte[]) marshaller.unmarshal(new StreamSource(reader));
+				assertTrue("Invalid result", Arrays.equals(buf, bufResult));
+			}
+			catch (Exception ex) {
+				throw new RuntimeException(ex);
+			}
+		});
 	}
 
 	@Test

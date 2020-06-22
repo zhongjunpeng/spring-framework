@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -135,29 +135,41 @@ public class ResolvableTypeTests {
 		assertTrue(type.isAssignableFrom(String.class));
 	}
 
+	@Test  // gh-23321
+	public void forRawClassAssignableFromTypeVariable() throws Exception {
+		ResolvableType typeVariable = ResolvableType.forClass(ExtendsList.class).as(List.class).getGeneric();
+		ResolvableType raw = ResolvableType.forRawClass(CharSequence.class);
+		assertThat(raw.resolve(), equalTo(CharSequence.class));
+		assertThat(typeVariable.resolve(), equalTo(CharSequence.class));
+		assertTrue(raw.resolve().isAssignableFrom(typeVariable.resolve()));
+		assertTrue(typeVariable.resolve().isAssignableFrom(raw.resolve()));
+		assertTrue(raw.isAssignableFrom(typeVariable));
+		assertTrue(typeVariable.isAssignableFrom(raw));
+	}
+
 	@Test
-	public void forInstanceMustNotBeNull() {
+	public void forInstanceMustNotBeNull() throws Exception {
 		this.thrown.expect(IllegalArgumentException.class);
 		this.thrown.expectMessage("Instance must not be null");
 		ResolvableType.forInstance(null);
 	}
 
 	@Test
-	public void forInstanceNoProvider() {
+	public void forInstanceNoProvider() throws Exception {
 		ResolvableType type = ResolvableType.forInstance(new Object());
 		assertThat(type.getType(), equalTo(Object.class));
 		assertThat(type.resolve(), equalTo(Object.class));
 	}
 
 	@Test
-	public void forInstanceProvider() {
+	public void forInstanceProvider() throws Exception {
 		ResolvableType type = ResolvableType.forInstance(new MyGenericInterfaceType<>(String.class));
 		assertThat(type.getRawClass(), equalTo(MyGenericInterfaceType.class));
 		assertThat(type.getGeneric().resolve(), equalTo(String.class));
 	}
 
 	@Test
-	public void forInstanceProviderNull() {
+	public void forInstanceProviderNull() throws Exception {
 		ResolvableType type = ResolvableType.forInstance(new MyGenericInterfaceType<String>(null));
 		assertThat(type.getType(), equalTo(MyGenericInterfaceType.class));
 		assertThat(type.resolve(), equalTo(MyGenericInterfaceType.class));
@@ -431,12 +443,8 @@ public class ResolvableTypeTests {
 			interfaces.add(interfaceType.toString());
 		}
 		assertThat(interfaces.toString(), equalTo(
-				"["
-				+ "java.io.Serializable, "
-				+ "java.lang.Cloneable, "
-				+ "java.util.List<java.lang.CharSequence>, "
-				+ "java.util.RandomAccess"
-				+ "]"));
+				"[java.io.Serializable, java.lang.Cloneable, " +
+				"java.util.List<java.lang.CharSequence>, java.util.RandomAccess]"));
 	}
 
 	@Test
@@ -676,8 +684,14 @@ public class ResolvableTypeTests {
 
 	@Test
 	public void resolveBoundedTypeVariableResult() throws Exception {
-		ResolvableType type = ResolvableType.forMethodReturnType(Methods.class.getMethod("boundedTypeVaraibleResult"));
+		ResolvableType type = ResolvableType.forMethodReturnType(Methods.class.getMethod("boundedTypeVariableResult"));
 		assertThat(type.resolve(), equalTo((Class) CharSequence.class));
+	}
+
+	@Test
+	public void resolveBoundedTypeVariableWildcardResult() throws Exception {
+		ResolvableType type = ResolvableType.forMethodReturnType(Methods.class.getMethod("boundedTypeVariableWildcardResult"));
+		assertThat(type.getGeneric(1).asCollection().resolveGeneric(), equalTo((Class) CharSequence.class));
 	}
 
 	@Test
@@ -687,27 +701,14 @@ public class ResolvableTypeTests {
 	}
 
 	@Test
-	public void resolveTypeVaraibleFromMethodReturn() throws Exception {
-		ResolvableType type = ResolvableType.forMethodReturnType(Methods.class.getMethod("typedReturn"));
-		assertThat(type.resolve(), nullValue());
-	}
-
-	@Test
-	public void resolveTypeVaraibleFromMethodReturnWithInstanceClass() throws Exception {
-		ResolvableType type = ResolvableType.forMethodReturnType(
-				Methods.class.getMethod("typedReturn"), TypedMethods.class);
-		assertThat(type.resolve(), equalTo((Class) String.class));
-	}
-
-	@Test
-	public void resolveTypeVaraibleFromSimpleInterfaceType() {
+	public void resolveTypeVariableFromSimpleInterfaceType() {
 		ResolvableType type = ResolvableType.forClass(
 				MySimpleInterfaceType.class).as(MyInterfaceType.class);
 		assertThat(type.resolveGeneric(), equalTo((Class) String.class));
 	}
 
 	@Test
-	public void resolveTypeVaraibleFromSimpleCollectionInterfaceType() {
+	public void resolveTypeVariableFromSimpleCollectionInterfaceType() {
 		ResolvableType type = ResolvableType.forClass(
 				MyCollectionInterfaceType.class).as(MyInterfaceType.class);
 		assertThat(type.resolveGeneric(), equalTo((Class) Collection.class));
@@ -715,14 +716,14 @@ public class ResolvableTypeTests {
 	}
 
 	@Test
-	public void resolveTypeVaraibleFromSimpleSuperclassType() {
+	public void resolveTypeVariableFromSimpleSuperclassType() {
 		ResolvableType type = ResolvableType.forClass(
 				MySimpleSuperclassType.class).as(MySuperclassType.class);
 		assertThat(type.resolveGeneric(), equalTo((Class) String.class));
 	}
 
 	@Test
-	public void resolveTypeVaraibleFromSimpleCollectionSuperclassType() {
+	public void resolveTypeVariableFromSimpleCollectionSuperclassType() {
 		ResolvableType type = ResolvableType.forClass(
 				MyCollectionSuperclassType.class).as(MySuperclassType.class);
 		assertThat(type.resolveGeneric(), equalTo((Class) Collection.class));
@@ -1451,7 +1452,9 @@ public class ResolvableTypeTests {
 
 		void charSequenceParameter(List<CharSequence> cs);
 
-		<R extends CharSequence & Serializable> R boundedTypeVaraibleResult();
+		<R extends CharSequence & Serializable> R boundedTypeVariableResult();
+
+		Map<String, ? extends List<? extends CharSequence>> boundedTypeVariableWildcardResult();
 
 		void nested(Map<Map<String, Integer>, Map<Byte, Long>> p);
 

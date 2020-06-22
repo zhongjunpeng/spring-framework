@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -45,6 +45,7 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketHandler;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.client.WebSocketClient;
+import org.springframework.web.socket.handler.WebSocketHandlerDecorator;
 
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
@@ -317,9 +318,12 @@ public class WebSocketStompClientTests {
 
 	@SuppressWarnings("unchecked")
 	private TcpConnection<byte[]> getTcpConnection() throws Exception {
-		WebSocketHandler webSocketHandler = connect();
-		webSocketHandler.afterConnectionEstablished(this.webSocketSession);
-		return (TcpConnection<byte[]>) webSocketHandler;
+		WebSocketHandler handler = connect();
+		handler.afterConnectionEstablished(this.webSocketSession);
+		if (handler instanceof WebSocketHandlerDecorator) {
+			handler = ((WebSocketHandlerDecorator) handler).getLastHandler();
+		}
+		return (TcpConnection<byte[]>) handler;
 	}
 
 	private void testInactivityTaskScheduling(Runnable runnable, long delay, long sleepTime)

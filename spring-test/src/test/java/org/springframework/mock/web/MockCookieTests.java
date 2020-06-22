@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,6 +15,9 @@
  */
 
 package org.springframework.mock.web;
+
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -33,6 +36,7 @@ public class MockCookieTests {
 
 	@Rule
 	public final ExpectedException exception = ExpectedException.none();
+
 
 	@Test
 	public void constructCookie() {
@@ -57,9 +61,7 @@ public class MockCookieTests {
 
 	@Test
 	public void parseHeaderWithoutAttributes() {
-		MockCookie cookie;
-
-		cookie = MockCookie.parse("SESSION=123");
+		MockCookie cookie = MockCookie.parse("SESSION=123");
 		assertCookie(cookie, "SESSION", "123");
 
 		cookie = MockCookie.parse("SESSION=123;");
@@ -68,8 +70,8 @@ public class MockCookieTests {
 
 	@Test
 	public void parseHeaderWithAttributes() {
-		MockCookie cookie = MockCookie.parse(
-				"SESSION=123; Domain=example.com; Max-Age=60; Path=/; Secure; HttpOnly; SameSite=Lax");
+		MockCookie cookie = MockCookie.parse("SESSION=123; Domain=example.com; Max-Age=60; " +
+				"Expires=Tue, 8 Oct 2019 19:50:00 GMT; Path=/; Secure; HttpOnly; SameSite=Lax");
 
 		assertCookie(cookie, "SESSION", "123");
 		assertEquals("example.com", cookie.getDomain());
@@ -77,7 +79,30 @@ public class MockCookieTests {
 		assertEquals("/", cookie.getPath());
 		assertTrue(cookie.getSecure());
 		assertTrue(cookie.isHttpOnly());
+		assertEquals(ZonedDateTime.parse("Tue, 8 Oct 2019 19:50:00 GMT",
+				DateTimeFormatter.RFC_1123_DATE_TIME), cookie.getExpires());
 		assertEquals("Lax", cookie.getSameSite());
+	}
+
+	@Test
+	public void parseHeaderWithZeroExpiresAttribute() {
+		MockCookie cookie = MockCookie.parse("SESSION=123; Expires=0");
+
+		assertCookie(cookie, "SESSION", "123");
+		assertNull(cookie.getExpires());
+	}
+
+	@Test
+	public void parseHeaderWithBogusExpiresAttribute() {
+		MockCookie cookie = MockCookie.parse("SESSION=123; Expires=bogus");
+
+		assertCookie(cookie, "SESSION", "123");
+		assertNull(cookie.getExpires());
+	}
+
+	private void assertCookie(MockCookie cookie, String name, String value) {
+		assertEquals(name, cookie.getName());
+		assertEquals(value, cookie.getValue());
 	}
 
 	@Test
@@ -103,9 +128,20 @@ public class MockCookieTests {
 		MockCookie.parse(header);
 	}
 
-	private void assertCookie(MockCookie cookie, String name, String value) {
-		assertEquals(name, cookie.getName());
-		assertEquals(value, cookie.getValue());
+	@Test
+	public void parseHeaderWithAttributesCaseSensitivity() {
+		MockCookie cookie = MockCookie.parse("SESSION=123; domain=example.com; max-age=60; " +
+				"expires=Tue, 8 Oct 2019 19:50:00 GMT; path=/; secure; httponly; samesite=Lax");
+
+		assertCookie(cookie, "SESSION", "123");
+		assertEquals("example.com", cookie.getDomain());
+		assertEquals(60, cookie.getMaxAge());
+		assertEquals("/", cookie.getPath());
+		assertTrue(cookie.getSecure());
+		assertTrue(cookie.isHttpOnly());
+		assertEquals(ZonedDateTime.parse("Tue, 8 Oct 2019 19:50:00 GMT",
+				DateTimeFormatter.RFC_1123_DATE_TIME), cookie.getExpires());
+		assertEquals("Lax", cookie.getSameSite());
 	}
 
 }

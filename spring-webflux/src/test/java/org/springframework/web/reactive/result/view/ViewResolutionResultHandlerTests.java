@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -114,7 +114,12 @@ public class ViewResolutionResultHandlerTests {
 	private void testSupports(MethodParameter returnType, boolean supports) {
 		ViewResolutionResultHandler resultHandler = resultHandler(mock(ViewResolver.class));
 		HandlerResult handlerResult = new HandlerResult(new Object(), null, returnType, this.bindingContext);
-		assertEquals(supports, resultHandler.supports(handlerResult));
+		if (supports) {
+			assertTrue("return type [" + returnType + "] should be supported", resultHandler.supports(handlerResult));
+		}
+		else {
+			assertFalse("return type [" + returnType + "] should not be supported", resultHandler.supports(handlerResult));
+		}
 	}
 
 	@Test

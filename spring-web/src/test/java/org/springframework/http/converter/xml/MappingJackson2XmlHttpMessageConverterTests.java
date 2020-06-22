@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,6 +17,7 @@
 package org.springframework.http.converter.xml;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 import com.fasterxml.jackson.annotation.JsonView;
@@ -54,6 +55,8 @@ public class MappingJackson2XmlHttpMessageConverterTests {
 		assertTrue(converter.canRead(MyBean.class, new MediaType("application", "xml")));
 		assertTrue(converter.canRead(MyBean.class, new MediaType("text", "xml")));
 		assertTrue(converter.canRead(MyBean.class, new MediaType("application", "soap+xml")));
+		assertTrue(converter.canRead(MyBean.class, new MediaType("text", "xml", StandardCharsets.UTF_8)));
+		assertTrue(converter.canRead(MyBean.class, new MediaType("text", "xml", StandardCharsets.ISO_8859_1)));
 	}
 
 	@Test
@@ -61,6 +64,8 @@ public class MappingJackson2XmlHttpMessageConverterTests {
 		assertTrue(converter.canWrite(MyBean.class, new MediaType("application", "xml")));
 		assertTrue(converter.canWrite(MyBean.class, new MediaType("text", "xml")));
 		assertTrue(converter.canWrite(MyBean.class, new MediaType("application", "soap+xml")));
+		assertTrue(converter.canWrite(MyBean.class, new MediaType("text", "xml", StandardCharsets.UTF_8)));
+		assertFalse(converter.canWrite(MyBean.class, new MediaType("text", "xml", StandardCharsets.ISO_8859_1)));
 	}
 
 	@Test
@@ -150,7 +155,7 @@ public class MappingJackson2XmlHttpMessageConverterTests {
 
 	@Test
 	public void readWithExternalReference() throws IOException {
-		String body = "<!DOCTYPE MyBean SYSTEM \"http://192.168.28.42/1.jsp\" [" +
+		String body = "<!DOCTYPE MyBean SYSTEM \"https://192.168.28.42/1.jsp\" [" +
 				"  <!ELEMENT root ANY >\n" +
 				"  <!ENTITY ext SYSTEM \"" +
 				new ClassPathResource("external.txt", getClass()).getURI() +
@@ -189,6 +194,21 @@ public class MappingJackson2XmlHttpMessageConverterTests {
 		this.thrown.expect(HttpMessageNotReadableException.class);
 		this.converter.read(MyBean.class, inputMessage);
 	}
+
+	@Test
+	@SuppressWarnings("unchecked")
+	public void readNonUnicode() throws Exception {
+		String body = "<MyBean>" +
+				"<string>føø bår</string>" +
+				"</MyBean>";
+
+		Charset charset = StandardCharsets.ISO_8859_1;
+		MockHttpInputMessage inputMessage = new MockHttpInputMessage(body.getBytes(charset));
+		inputMessage.getHeaders().setContentType(new MediaType("application", "xml", charset));
+		MyBean result = (MyBean) converter.read(MyBean.class, inputMessage);
+		assertEquals("føø bår", result.getString());
+	}
+
 
 
 	public static class MyBean {

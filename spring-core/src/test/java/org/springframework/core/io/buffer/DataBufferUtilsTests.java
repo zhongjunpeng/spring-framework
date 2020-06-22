@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -37,6 +37,8 @@ import io.netty.buffer.ByteBuf;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.stubbing.Answer;
+import org.reactivestreams.Subscription;
+import reactor.core.publisher.BaseSubscriber;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -46,9 +48,14 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.buffer.support.DataBufferTestUtils;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.anyLong;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.isA;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * @author Arjen Poutsma
@@ -182,6 +189,18 @@ public class DataBufferUtilsTests extends AbstractDataBufferAllocatingTestCase {
 				.consumeNextWith(stringConsumer("foo"))
 				.thenCancel()
 				.verify();
+	}
+
+	@Test // gh-22107
+	public void readAsynchronousFileChannelCancelWithoutDemand() throws Exception {
+		URI uri = this.resource.getURI();
+		Flux<DataBuffer> flux = DataBufferUtils.readAsynchronousFileChannel(
+				() -> AsynchronousFileChannel.open(Paths.get(uri), StandardOpenOption.READ),
+				this.bufferFactory, 3);
+
+		BaseSubscriber<DataBuffer> subscriber = new ZeroDemandSubscriber();
+		flux.subscribe(subscriber);
+		subscriber.cancel();
 	}
 
 	@Test
@@ -700,12 +719,23 @@ public class DataBufferUtilsTests extends AbstractDataBufferAllocatingTestCase {
 		Mono<DataBuffer> result = DataBufferUtils.join(flux);
 
 		StepVerifier.create(result)
-				.consumeNextWith(dataBuffer -> {
-					assertEquals("foobarbaz",
-							DataBufferTestUtils.dumpString(dataBuffer, StandardCharsets.UTF_8));
-					release(dataBuffer);
+				.consumeNextWith(buf -> {
+					assertEquals("foobarbaz", DataBufferTestUtils.dumpString(buf, StandardCharsets.UTF_8));
+					release(buf);
 				})
 				.verifyComplete();
+	}
+
+	@Test
+	public void joinWithLimit() {
+		DataBuffer foo = stringBuffer("foo");
+		DataBuffer bar = stringBuffer("bar");
+		DataBuffer baz = stringBuffer("baz");
+		Flux<DataBuffer> flux = Flux.just(foo, bar, baz);
+		Mono<DataBuffer> result = DataBufferUtils.join(flux, 8);
+
+		StepVerifier.create(result)
+				.verifyError(DataBufferLimitException.class);
 	}
 
 	@Test
@@ -735,5 +765,12 @@ public class DataBufferUtilsTests extends AbstractDataBufferAllocatingTestCase {
 	}
 
 
+	private static class ZeroDemandSubscriber extends BaseSubscriber<DataBuffer> {
+
+		@Override
+		protected void hookOnSubscribe(Subscription subscription) {
+			// Just subscribe without requesting
+		}
+	}
 
 }

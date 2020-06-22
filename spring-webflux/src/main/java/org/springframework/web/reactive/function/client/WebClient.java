@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2018 the original author or authors.
+ * Copyright 2002-2019 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.IntPredicate;
 import java.util.function.Predicate;
 
 import org.reactivestreams.Publisher;
@@ -36,6 +37,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.reactive.ClientHttpConnector;
 import org.springframework.http.client.reactive.ClientHttpRequest;
+import org.springframework.http.codec.ClientCodecConfigurer;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.reactive.function.BodyInserter;
 import org.springframework.web.reactive.function.BodyInserters;
@@ -63,6 +65,7 @@ import org.springframework.web.util.UriBuilderFactory;
  *
  * @author Rossen Stoyanchev
  * @author Arjen Poutsma
+ * @author Brian Clozel
  * @since 5.0
  */
 public interface WebClient {
@@ -160,29 +163,29 @@ public interface WebClient {
 		/**
 		 * Configure a base URL for requests performed through the client.
 		 *
-		 * <p>For example given base URL "http://abc.com/v1":
+		 * <p>For example given base URL "https://abc.go.com/v1":
 		 * <p><pre class="code">
 		 * Mono&#060;Account&#062; result = client.get().uri("/accounts/{id}", 43)
 		 *         .retrieve()
 		 *         .bodyToMono(Account.class);
 		 *
-		 * // Result: http://abc.com/v1/accounts/43
+		 * // Result: https://abc.go.com/v1/accounts/43
 		 *
 		 * Flux&#060;Account&#062; result = client.get()
 		 *         .uri(builder -> builder.path("/accounts").queryParam("q", "12").build())
 		 *         .retrieve()
 		 *         .bodyToFlux(Account.class);
 		 *
-		 * // Result: http://abc.com/v1/accounts?q=12
+		 * // Result: https://abc.go.com/v1/accounts?q=12
 		 * </pre>
 		 *
 		 * <p>The base URL can be overridden with an absolute URI:
 		 * <pre class="code">
-		 * Mono&#060;Account&#062; result = client.get().uri("http://xyz.com/path")
+		 * Mono&#060;Account&#062; result = client.get().uri("https://xyz.com/path")
 		 *         .retrieve()
 		 *         .bodyToMono(Account.class);
 		 *
-		 * // Result: http://xyz.com/path
+		 * // Result: https://xyz.com/path
 		 * </pre>
 		 *
 		 * <p>Or partially overridden with a {@code UriBuilder}:
@@ -192,7 +195,7 @@ public interface WebClient {
 		 *         .retrieve()
 		 *         .bodyToFlux(Account.class);
 		 *
-		 * // Result: http://abc.com/v2/accounts?q=12
+		 * // Result: https://abc.go.com/v2/accounts?q=12
 		 * </pre>
 		 *
 		 * @see #defaultUriVariables(Map)
@@ -287,25 +290,44 @@ public interface WebClient {
 		Builder clientConnector(ClientHttpConnector connector);
 
 		/**
+		 * Configure the codecs for the {@code WebClient} in the
+		 * {@link #exchangeStrategies(ExchangeStrategies) underlying}
+		 * {@code ExchangeStrategies}.
+		 * @param configurer the configurer to apply
+		 * @since 5.1.13
+		 */
+		Builder codecs(Consumer<ClientCodecConfigurer> configurer);
+
+		/**
 		 * Configure the {@link ExchangeStrategies} to use.
-		 * <p>By default this is obtained from {@link ExchangeStrategies#withDefaults()}.
+		 * <p>For most cases, prefer using {@link #codecs(Consumer)} which allows
+		 * customizing the codecs in the {@code ExchangeStrategies} rather than
+		 * replace them. That ensures multiple parties can contribute to codecs
+		 * configuration.
+		 * <p>By default this is set to {@link ExchangeStrategies#withDefaults()}.
 		 * @param strategies the strategies to use
 		 */
 		Builder exchangeStrategies(ExchangeStrategies strategies);
 
 		/**
+		 * Customize the strategies configured via
+		 * {@link #exchangeStrategies(ExchangeStrategies)}. This method is
+		 * designed for use in scenarios where multiple parties wish to update
+		 * the {@code ExchangeStrategies}.
+		 * @deprecated as of 5.1.13 in favor of {@link #codecs(Consumer)}
+		 */
+		@Deprecated
+		Builder exchangeStrategies(Consumer<ExchangeStrategies.Builder> configurer);
+
+		/**
 		 * Provide an {@link ExchangeFunction} pre-configured with
 		 * {@link ClientHttpConnector} and {@link ExchangeStrategies}.
 		 * <p>This is an alternative to, and effectively overrides
-		 * {@link #clientConnector}, and {@link #exchangeStrategies}.
+		 * {@link #clientConnector}, and
+		 * {@link #exchangeStrategies(ExchangeStrategies)}.
 		 * @param exchangeFunction the exchange function to use
 		 */
 		Builder exchangeFunction(ExchangeFunction exchangeFunction);
-
-		/**
-		 * Clone this {@code WebClient.Builder}.
-		 */
-		Builder clone();
 
 		/**
 		 * Apply the given {@code Consumer} to this builder instance.
@@ -315,16 +337,19 @@ public interface WebClient {
 		Builder apply(Consumer<Builder> builderConsumer);
 
 		/**
+		 * Clone this {@code WebClient.Builder}.
+		 */
+		Builder clone();
+
+		/**
 		 * Builder the {@link WebClient} instance.
 		 */
 		WebClient build();
-
 	}
 
 
 	/**
 	 * Contract for specifying the URI for a request.
-	 *
 	 * @param <S> a self reference to the spec type
 	 */
 	interface UriSpec<S extends RequestHeadersSpec<?>> {
@@ -358,7 +383,6 @@ public interface WebClient {
 
 	/**
 	 * Contract for specifying request headers leading up to the exchange.
-	 *
 	 * @param <S> a self reference to the spec type
 	 */
 	interface RequestHeadersSpec<S extends RequestHeadersSpec<S>> {
@@ -524,9 +548,9 @@ public interface WebClient {
 		 * {@linkplain BodyInserters#fromPublisher Publisher inserter}.
 		 * For example:
 		 * <p><pre>
-		 * Mono<Person> personMono = ... ;
+		 * Mono&lt;Person&gt; personMono = ... ;
 		 *
-		 * Mono<Void> result = client.post()
+		 * Mono&lt;Void&gt; result = client.post()
 		 *     .uri("/persons/{id}", id)
 		 *     .contentType(MediaType.APPLICATION_JSON)
 		 *     .body(personMono, Person.class)
@@ -582,6 +606,7 @@ public interface WebClient {
 		RequestHeadersSpec<?> syncBody(Object body);
 	}
 
+
 	/**
 	 * Contract for specifying response operations following the exchange.
 	 */
@@ -591,7 +616,7 @@ public interface WebClient {
 		 * Register a custom error function that gets invoked when the given {@link HttpStatus}
 		 * predicate applies. The exception returned from the function will be returned from
 		 * {@link #bodyToMono(Class)} and {@link #bodyToFlux(Class)}.
-		 * <p>By default, an error handler is register that throws a
+		 * <p>By default, an error handler is registered that throws a
 		 * {@link WebClientResponseException} when the response status code is 4xx or 5xx.
 		 * @param statusPredicate a predicate that indicates whether {@code exceptionFunction}
 		 * applies
@@ -602,6 +627,24 @@ public interface WebClient {
 		 * @return this builder
 		 */
 		ResponseSpec onStatus(Predicate<HttpStatus> statusPredicate,
+				Function<ClientResponse, Mono<? extends Throwable>> exceptionFunction);
+
+		/**
+		 * Register a custom error function that gets invoked when the given raw status code
+		 * predicate applies. The exception returned from the function will be returned from
+		 * {@link #bodyToMono(Class)} and {@link #bodyToFlux(Class)}.
+		 * <p>By default, an error handler is registered that throws a
+		 * {@link WebClientResponseException} when the response status code is 4xx or 5xx.
+		 * @param statusCodePredicate a predicate of the raw status code that indicates
+		 * whether {@code exceptionFunction} applies.
+		 * <p><strong>NOTE:</strong> if the response is expected to have content,
+		 * the exceptionFunction should consume it. If not, the content will be
+		 * automatically drained to ensure resources are released.
+		 * @param exceptionFunction the function that returns the exception
+		 * @return this builder
+		 * @since 5.1.9
+		 */
+		ResponseSpec onRawStatus(IntPredicate statusCodePredicate,
 				Function<ClientResponse, Mono<? extends Throwable>> exceptionFunction);
 
 		/**
@@ -647,24 +690,22 @@ public interface WebClient {
 		 * status code is 4xx or 5xx
 		 */
 		<T> Flux<T> bodyToFlux(ParameterizedTypeReference<T> typeReference);
-
 	}
 
 
 	/**
 	 * Contract for specifying request headers and URI for a request.
-	 *
 	 * @param <S> a self reference to the spec type
 	 */
 	interface RequestHeadersUriSpec<S extends RequestHeadersSpec<S>>
 			extends UriSpec<S>, RequestHeadersSpec<S> {
 	}
 
+
 	/**
 	 * Contract for specifying request headers, body and URI for a request.
 	 */
 	interface RequestBodyUriSpec extends RequestBodySpec, RequestHeadersUriSpec<RequestBodySpec> {
 	}
-
 
 }

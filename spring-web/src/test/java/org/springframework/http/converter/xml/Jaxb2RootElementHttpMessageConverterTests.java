@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -17,6 +17,7 @@
 package org.springframework.http.converter.xml;
 
 import java.nio.charset.StandardCharsets;
+
 import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
 import javax.xml.bind.annotation.XmlAttribute;
@@ -125,7 +126,7 @@ public class Jaxb2RootElementHttpMessageConverterTests {
 	@Test
 	public void readXmlRootElementExternalEntityDisabled() throws Exception {
 		Resource external = new ClassPathResource("external.txt", getClass());
-		String content =  "<!DOCTYPE root SYSTEM \"http://192.168.28.42/1.jsp\" [" +
+		String content =  "<!DOCTYPE root SYSTEM \"https://192.168.28.42/1.jsp\" [" +
 				"  <!ELEMENT external ANY >\n" +
 				"  <!ENTITY ext SYSTEM \"" + external.getURI() + "\" >]>" +
 				"  <rootElement><external>&ext;</external></rootElement>";

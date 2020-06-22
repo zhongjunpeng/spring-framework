@@ -1,11 +1,11 @@
 /*
- * Copyright 2002-2017 the original author or authors.
+ * Copyright 2002-2020 the original author or authors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *      https://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -149,9 +149,10 @@ public class MethodMetadataReadingVisitor extends MethodVisitor implements Metho
 		MultiValueMap<String, Object> allAttributes = new LinkedMultiValueMap<>();
 		List<AnnotationAttributes> attributesList = this.attributesMap.get(annotationName);
 		if (attributesList != null) {
+			String annotatedElement = "method '" + getMethodName() + '\'';
 			for (AnnotationAttributes annotationAttributes : attributesList) {
 				AnnotationAttributes convertedAttributes = AnnotationReadingVisitorUtils.convertClassValues(
-						"method '" + getMethodName() + "'", this.classLoader, annotationAttributes, classValuesAsString);
+						annotatedElement, this.classLoader, annotationAttributes, classValuesAsString);
 				convertedAttributes.forEach(allAttributes::add);
 			}
 		}
