@@ -110,22 +110,6 @@ public class XmlBeanDefinitionReaderTests {
 		testBeanDefinitions(registry);
 	}
 
-	private void testBeanDefinitions(BeanDefinitionRegistry registry) {
-		assertEquals(24, registry.getBeanDefinitionCount());
-		assertEquals(24, registry.getBeanDefinitionNames().length);
-		assertTrue(Arrays.asList(registry.getBeanDefinitionNames()).contains("rod"));
-		assertTrue(Arrays.asList(registry.getBeanDefinitionNames()).contains("aliased"));
-		assertTrue(registry.containsBeanDefinition("rod"));
-		assertTrue(registry.containsBeanDefinition("aliased"));
-		assertEquals(TestBean.class.getName(), registry.getBeanDefinition("rod").getBeanClassName());
-		assertEquals(TestBean.class.getName(), registry.getBeanDefinition("aliased").getBeanClassName());
-		assertTrue(registry.isAlias("youralias"));
-		String[] aliases = registry.getAliases("aliased");
-		assertEquals(2, aliases.length);
-		assertTrue(ObjectUtils.containsElement(aliases, "myalias"));
-		assertTrue(ObjectUtils.containsElement(aliases, "youralias"));
-	}
-
 	/**
 	 * 编程式使用IOC容器
 	 *
@@ -143,11 +127,27 @@ public class XmlBeanDefinitionReaderTests {
 	@Test
 	public void testWithFreshInputStream() {
 		//资源定位
-		Resource resource = new ClassPathResource("test.xml");
+		Resource resource = new ClassPathResource("test.xml",getClass());
 		DefaultListableBeanFactory factory = new DefaultListableBeanFactory();
 		XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(factory);
 		//加载、注册
 		reader.loadBeanDefinitions(resource);
+	}
+
+	private void testBeanDefinitions(BeanDefinitionRegistry registry) {
+		assertEquals(24, registry.getBeanDefinitionCount());
+		assertEquals(24, registry.getBeanDefinitionNames().length);
+		assertTrue(Arrays.asList(registry.getBeanDefinitionNames()).contains("rod"));
+		assertTrue(Arrays.asList(registry.getBeanDefinitionNames()).contains("aliased"));
+		assertTrue(registry.containsBeanDefinition("rod"));
+		assertTrue(registry.containsBeanDefinition("aliased"));
+		assertEquals(TestBean.class.getName(), registry.getBeanDefinition("rod").getBeanClassName());
+		assertEquals(TestBean.class.getName(), registry.getBeanDefinition("aliased").getBeanClassName());
+		assertTrue(registry.isAlias("youralias"));
+		String[] aliases = registry.getAliases("aliased");
+		assertEquals(2, aliases.length);
+		assertTrue(ObjectUtils.containsElement(aliases, "myalias"));
+		assertTrue(ObjectUtils.containsElement(aliases, "youralias"));
 	}
 
 	@Test

@@ -56,16 +56,16 @@
 	<suppress files="org[\\/]springframework[\\/]test[\\/]context[\\/]jdbc[\\/]MergedSqlConfig" checks="JavadocStyle" />
 
 	<!-- spring-web -->
-	<suppress files="SpringHandlerInstantiator" checks="JavadocStyle" />
+<!--	<suppress files="SpringHandlerInstantiator" checks="JavadocStyle" />
 	<suppress files="org[\\/]springframework[\\/]http[\\/]HttpMethod" checks="JavadocVariable|JavadocStyle" />
 	<suppress files="org[\\/]springframework[\\/]http[\\/]HttpStatus" checks="JavadocVariable|JavadocStyle" />
 	<suppress files="org[\\/]springframework[\\/]web[\\/]bind[\\/]annotation[\\/]CrossOrigin" checks="JavadocStyle" />
 	<suppress files="org[\\/]springframework[\\/]web[\\/]bind[\\/]annotation[\\/]RequestMethod" checks="JavadocVariable" />
 	<suppress files="PatternParseException" checks="JavadocVariable" />
-	<suppress files="web[\\/]reactive[\\/]socket[\\/]CloseStatus" checks="JavadocStyle" />
+	<suppress files="web[\\/]reactive[\\/]socket[\\/]CloseStatus" checks="JavadocStyle" />-->
 
 	<!-- spring-webmvc -->
-	<suppress files="org[\\/]springframework[\\/]web[\\/]servlet[\\/]tags[\\/]form[\\/].*Tag" checks="JavadocVariable" />
+<!--	<suppress files="org[\\/]springframework[\\/]web[\\/]servlet[\\/]tags[\\/]form[\\/].*Tag" checks="JavadocVariable" />-->
 
 	<!-- spring-websocket -->
 	<suppress files="web[\\/]socket[\\/]CloseStatus" checks="JavadocStyle" />
