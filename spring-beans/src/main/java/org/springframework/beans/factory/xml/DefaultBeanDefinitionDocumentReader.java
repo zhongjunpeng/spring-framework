@@ -214,6 +214,7 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 		else if (delegate.nodeNameEquals(ele, BEAN_ELEMENT)) {
 			processBeanDefinition(ele, delegate);
 		}
+		// 如果碰到的是嵌套的 <beans /> 标签，需要递归
 		else if (delegate.nodeNameEquals(ele, NESTED_BEANS_ELEMENT)) {
 			// recurse
 			doRegisterBeanDefinitions(ele);
@@ -324,7 +325,7 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 	 */
 	// 完成 Bean 标签解析的核心工作
 	protected void processBeanDefinition(Element ele, BeanDefinitionParserDelegate delegate) {
-		// 进行 bean 元素解析。
+		// 进行 bean 元素解析。将 <bean /> 节点中的信息提取出来，然后封装到一个 BeanDefinitionHolder 中
 		// 如果解析成功，则返回 BeanDefinitionHolder 对象。而 BeanDefinitionHolder 为 name 和 alias 的 BeanDefinition 对象
 		// 如果解析失败，则返回 null 。
 		BeanDefinitionHolder bdHolder = delegate.parseBeanDefinitionElement(ele);

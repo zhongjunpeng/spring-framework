@@ -1,6 +1,11 @@
+import com.zhongjp.springTest.JavaConfig;
+import com.zhongjp.springTest.User;
 import org.junit.Test;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 
@@ -28,5 +33,24 @@ public class ApplicationTest {
 		XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(factory);
 		//加载、注册
 		reader.loadBeanDefinitions(resource);
+	}
+
+
+	@Test
+	public void testAnnotationConfigApplicationContext() {
+		ApplicationContext ac = new AnnotationConfigApplicationContext(JavaConfig.class);
+		User user = ac.getBean(User.class);
+		System.out.println(user.toString());
+	}
+
+	@Test
+	public void testClassPathXmlApplicationContext() {
+		// 用我们的配置文件来启动一个 ApplicationContext
+		ApplicationContext context = new ClassPathXmlApplicationContext("classpath:/xml/User.xml");
+		System.out.println("context 启动成功");
+		// 从 context 中取出我们的 Bean，而不是用 new MessageServiceImpl() 这种方式
+		User user = context.getBean(User.class);
+		// 这句将输出: hello world
+		System.out.println(user.toString());
 	}
 }
