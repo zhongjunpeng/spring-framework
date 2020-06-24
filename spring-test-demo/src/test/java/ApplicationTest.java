@@ -24,6 +24,9 @@ public class ApplicationTest {
 	 * 	在IoC容器内部将解析得到的BeanDefinition注入到HashMap容器中，IoC容器其实就是通过这个HashMap来维护这些BeanDefinition对象的。
 	 * 		在这里需要注意这个过程并没有完成依赖注入。因为在BeanFactory中，Bean的创建发生在应用第一次调用#getBean(...)方法时。
 	 * 		可以通过预处理的方式，对某个Bean设置 lazyinit = false 属性，那么这个Bean的依赖注入就会在容器初始化的时候完成。
+	 * 		这一点跟ApplicationContext不一样，ApplicationContext是容器初始化时就把Bean创建了。
+	 *
+	 * 	XML Resource => XML Document => Bean Definition 。
 	 */
 	@Test
 	public void testWithFreshInputStream() {
