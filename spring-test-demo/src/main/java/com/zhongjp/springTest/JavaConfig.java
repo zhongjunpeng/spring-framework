@@ -1,11 +1,10 @@
 package com.zhongjp.springTest;
 
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.ComponentScan;
-import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.*;
 
 @Configuration
 @ComponentScan
+@Conditional(Person.class)
 public class JavaConfig {
 
 	@Bean

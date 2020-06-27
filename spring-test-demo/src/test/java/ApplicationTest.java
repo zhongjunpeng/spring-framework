@@ -47,6 +47,14 @@ public class ApplicationTest {
 	}
 
 	@Test
+	public void testAnnotationConfigApplicationContextRegist() {
+		/*AnnotationConfigApplicationContext ac = new AnnotationConfigApplicationContext();
+		ac.register(User.class);
+		User user = ac.getBean(User.class);
+		System.out.println(user.toString());*/
+	}
+
+	@Test
 	public void testClassPathXmlApplicationContext() {
 		// 用我们的配置文件来启动一个 ApplicationContext
 		ApplicationContext context = new ClassPathXmlApplicationContext("classpath:/xml/User.xml");

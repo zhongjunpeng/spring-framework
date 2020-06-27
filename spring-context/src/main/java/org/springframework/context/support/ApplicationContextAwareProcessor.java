@@ -58,6 +58,13 @@ import org.springframework.util.StringValueResolver;
  * @see org.springframework.context.ApplicationContextAware
  * @see org.springframework.context.support.AbstractApplicationContext#refresh()
  */
+
+/**
+ * 问题：Spring中为什么继承了ApplicationContextAware接口就可以使用ApplicationContext对象？
+ * 问题：什么是后置处理器？后置处理器主要是对bean进行增强，包括在bean初始化前和初始化后进行增强，如修改bean属性、对bean的方法进行代理等。
+ * 问题：ApplicationContext功能扩展及其扩展点有哪些？
+ */
+// 该类没有public修饰符，表明这个工具类spring并没有打算给外部使用
 class ApplicationContextAwareProcessor implements BeanPostProcessor {
 
 	private final ConfigurableApplicationContext applicationContext;
@@ -67,6 +74,9 @@ class ApplicationContextAwareProcessor implements BeanPostProcessor {
 
 	/**
 	 * Create a new ApplicationContextAwareProcessor for the given context.
+	 * 使用给定的应用上下文创建一个ApplicationContextAwareProcessor实例，
+	 * 通常该方法由应用上下文对象自己调用，比如在AbstractApplicationContext中：
+	 * new ApplicationContextAwareProcessor(this)
 	 */
 	public ApplicationContextAwareProcessor(ConfigurableApplicationContext applicationContext) {
 		this.applicationContext = applicationContext;
@@ -74,6 +84,8 @@ class ApplicationContextAwareProcessor implements BeanPostProcessor {
 	}
 
 
+	// 前置处理器：接口BeanPostProcessor规定的方法，会在bean创建时，实例化后，初始化前，对bean对象应用
+	// 可以用于实现spring容器中某一个类的bean对象在初始化时需要得到Spring容器内容。
 	@Override
 	@Nullable
 	public Object postProcessBeforeInitialization(final Object bean, String beanName) throws BeansException {
@@ -88,17 +100,20 @@ class ApplicationContextAwareProcessor implements BeanPostProcessor {
 
 		if (acc != null) {
 			AccessController.doPrivileged((PrivilegedAction<Object>) () -> {
+				// 检查bean上是否实现了某个Aware接口，有的话做相应调用
 				invokeAwareInterfaces(bean);
 				return null;
 			}, acc);
 		}
 		else {
+			// 检查bean上是否实现了某个Aware接口，有的话做相应调用
 			invokeAwareInterfaces(bean);
 		}
 
 		return bean;
 	}
 
+	// 检查bean上是否实现了某个Aware接口，有的话做相应调用
 	private void invokeAwareInterfaces(Object bean) {
 		if (bean instanceof Aware) {
 			if (bean instanceof EnvironmentAware) {
@@ -122,6 +137,7 @@ class ApplicationContextAwareProcessor implements BeanPostProcessor {
 		}
 	}
 
+	// 后置处理器
 	@Override
 	public Object postProcessAfterInitialization(Object bean, String beanName) {
 		return bean;
