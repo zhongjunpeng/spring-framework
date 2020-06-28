@@ -680,14 +680,17 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		// 这里设置为加载当前 ApplicationContext 类的类加载器
 		beanFactory.setBeanClassLoader(getClassLoader());
 		beanFactory.setBeanExpressionResolver(new StandardBeanExpressionResolver(beanFactory.getBeanClassLoader()));
+		//对象与string类型的转换   <property red="dao">
 		beanFactory.addPropertyEditorRegistrar(new ResourceEditorRegistrar(this, getEnvironment()));
 
 		// Configure the bean factory with context callbacks.
+
 		// 添加一个 BeanPostProcessor，这个 processor 比较简单：
 		// 实现了 Aware 接口的 beans 在初始化的时候，这个 processor 负责回调，
 		// 这个我们很常用，如我们会为了获取 ApplicationContext 而 implement ApplicationContextAware
 		// 注意：它不仅仅回调 ApplicationContextAware，
 		// 还会负责回调 EnvironmentAware、ResourceLoaderAware 等
+		// 也就是说能够在bean中获得到各种*Aware（*Aware都有其作用）
 		beanFactory.addBeanPostProcessor(new ApplicationContextAwareProcessor(this));
 		beanFactory.ignoreDependencyInterface(EnvironmentAware.class);
 		beanFactory.ignoreDependencyInterface(EmbeddedValueResolverAware.class);

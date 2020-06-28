@@ -9,6 +9,6 @@ public class Person implements Condition {
 	@Override
 	public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
 		Environment environment = context.getEnvironment();
-		return true;
+		return true; // 符合条件返回true
 	}
 }
