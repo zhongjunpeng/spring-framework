@@ -24,7 +24,7 @@ import org.springframework.stereotype.Component;
  *
  * 如果有多个BeanPostProcessor实例，我们可以通过设置order属性或实现Ordered接口来控制执行顺序。
  */
-@Component
+//@Component
 public class CustomBeanPostProcessor implements BeanPostProcessor, PriorityOrdered {
 	@Override
 	public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {

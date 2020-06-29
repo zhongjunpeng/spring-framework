@@ -162,6 +162,13 @@ public abstract class AnnotationConfigUtils {
 
 		Set<BeanDefinitionHolder> beanDefs = new LinkedHashSet<>(8);
 
+		/**
+		 * BeanFactoryPostProcessor：BeanFactory后置处理器，是对BeanDefinition对象进行修改。（BeanDefinition：存储bean标签的信息，用来生成bean实例）
+		 * BeanPostProcessor：Bean后置处理器，是对生成的Bean对象进行修改。
+		 * ————————————————
+		 * 版权声明：本文为CSDN博主「和光同其尘」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
+		 * 原文链接：https://blog.csdn.net/zhanyu1/article/details/83114684
+		 */
 		//BeanDefinitio的注册，这里很重要，需要理解注册每个bean的类型
 		if (!registry.containsBeanDefinition(CONFIGURATION_ANNOTATION_PROCESSOR_BEAN_NAME)) {
 			//需要注意的是ConfigurationClassPostProcessor的类型是BeanDefinitionRegistryPostProcessor
@@ -230,6 +237,9 @@ public abstract class AnnotationConfigUtils {
 			return (DefaultListableBeanFactory) registry;
 		}
 		else if (registry instanceof GenericApplicationContext) {
+			//这里在AnnotationConfigApplicationContext初始化的时候this()
+			//方法中调用了父类GenericApplicationContext的时候new了一个DefaultListableBeanFactory对象
+			//下面代码返回这个对象
 			return ((GenericApplicationContext) registry).getDefaultListableBeanFactory();
 		}
 		else {

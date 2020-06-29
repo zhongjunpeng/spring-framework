@@ -1,5 +1,4 @@
-import com.zhongjp.springTest.JavaConfig;
-import com.zhongjp.springTest.User;
+import com.zhongjp.springTest.*;
 import org.junit.Test;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
@@ -13,20 +12,20 @@ public class ApplicationTest {
 
 	/**
 	 * 编程式使用IOC容器
-	 *
+	 * <p>
 	 * 整个过程分为三个步骤：资源定位、装载、注册。
-	 *
+	 * <p>
 	 * 装载：BeanDefinitionReader读取、解析Resource资源，将用户自定义的Bean表示成 IOC容器的内部数据结构：BeanDefinition。
-	 * 		在IOC容器内部维护着一个BeanDefinition Map的数据结构；
-	 * 		在配置文件中每一个<bean></bean>都对应着一个 BeanDefinition 对象。
-	 *
-	 * 	注册：向IOC容器注册解析得到的BeanDefinition对象，这个过程是通过BeanDefinitionRegistry接口来实现的。
-	 * 	在IoC容器内部将解析得到的BeanDefinition注入到HashMap容器中，IoC容器其实就是通过这个HashMap来维护这些BeanDefinition对象的。
-	 * 		在这里需要注意这个过程并没有完成依赖注入。因为在BeanFactory中，Bean的创建发生在应用第一次调用#getBean(...)方法时。
-	 * 		可以通过预处理的方式，对某个Bean设置 lazyinit = false 属性，那么这个Bean的依赖注入就会在容器初始化的时候完成。
-	 * 		这一点跟ApplicationContext不一样，ApplicationContext是容器初始化时就把Bean创建了。
-	 *
-	 * 	XML Resource => XML Document => Bean Definition 。
+	 * 在IOC容器内部维护着一个BeanDefinition Map的数据结构；
+	 * 在配置文件中每一个<bean></bean>都对应着一个 BeanDefinition 对象。
+	 * <p>
+	 * 注册：向IOC容器注册解析得到的BeanDefinition对象，这个过程是通过BeanDefinitionRegistry接口来实现的。
+	 * 在IoC容器内部将解析得到的BeanDefinition注入到HashMap容器中，IoC容器其实就是通过这个HashMap来维护这些BeanDefinition对象的。
+	 * 在这里需要注意这个过程并没有完成依赖注入。因为在BeanFactory中，Bean的创建发生在应用第一次调用#getBean(...)方法时。
+	 * 可以通过预处理的方式，对某个Bean设置 lazyinit = false 属性，那么这个Bean的依赖注入就会在容器初始化的时候完成。
+	 * 这一点跟ApplicationContext不一样，ApplicationContext是容器初始化时就把Bean创建了。
+	 * <p>
+	 * XML Resource => XML Document => Bean Definition 。
 	 */
 	@Test
 	public void testWithFreshInputStream() {
@@ -41,7 +40,8 @@ public class ApplicationTest {
 
 	@Test
 	public void testAnnotationConfigApplicationContext() {
-		ApplicationContext ac = new AnnotationConfigApplicationContext(JavaConfig.class);
+		AnnotationConfigApplicationContext ac = new AnnotationConfigApplicationContext(JavaConfig.class);
+		ac.addBeanFactoryPostProcessor(new CustomBeanFactoryPostProcessor());
 		User user = ac.getBean(User.class);
 		System.out.println(user.toString());
 	}
@@ -63,5 +63,19 @@ public class ApplicationTest {
 		User user = context.getBean(User.class);
 		// 这句将输出: hello world
 		System.out.println(user.toString());
+	}
+
+	/**
+	 * 例子：https://blog.csdn.net/zhanyu1/article/details/83114684
+	 */
+	@Test
+	public void postProcessorTest() {
+		ApplicationContext context = new ClassPathXmlApplicationContext("xml/postprocessor.xml");
+		CustomBean bean = (CustomBean) context.getBean("customBean");
+		System.out.println("################ 实例化、初始化bean完成");
+		System.out.println("****************下面输出结果");
+		System.out.println("描述：" + bean.getDesc());
+		System.out.println("备注：" + bean.getRemark());
+
 	}
 }
