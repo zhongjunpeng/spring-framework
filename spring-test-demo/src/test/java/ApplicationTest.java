@@ -8,6 +8,10 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 public class ApplicationTest {
 
 	/**
@@ -110,5 +114,11 @@ public class ApplicationTest {
 		System.out.println("描述：" + bean.getDesc());
 		System.out.println("备注：" + bean.getRemark());
 
+	}
+
+	@Test
+	public void test123() {
+		ExecutorService executorService = Executors.newFixedThreadPool(1);
+		//executorService.execute();
 	}
 }
