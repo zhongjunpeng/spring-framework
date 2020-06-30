@@ -84,7 +84,7 @@
 		<module name="com.puppycrawl.tools.checkstyle.checks.coding.OneStatementPerLineCheck" />-->
 
 		<!-- Imports -->
-		<module name="com.puppycrawl.tools.checkstyle.checks.imports.AvoidStarImportCheck" />
+		<!--<module name="com.puppycrawl.tools.checkstyle.checks.imports.AvoidStarImportCheck" />
 		<module name="com.puppycrawl.tools.checkstyle.checks.imports.RedundantImportCheck" />
 		<module name="com.puppycrawl.tools.checkstyle.checks.imports.UnusedImportsCheck">
 			<property name="processJavadoc" value="true" />
@@ -95,7 +95,7 @@
 			<property name="separated" value="true" />
 			<property name="option" value="bottom" />
 			<property name="sortStaticImportsAlphabetically" value="true" />
-		</module>
+		</module>-->
 
 		<!-- Javadoc Comments -->
 		<!--<module name="com.puppycrawl.tools.checkstyle.checks.javadoc.JavadocTypeCheck">

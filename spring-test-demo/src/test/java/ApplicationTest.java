@@ -41,17 +41,23 @@ public class ApplicationTest {
 	@Test
 	public void testAnnotationConfigApplicationContext() {
 		AnnotationConfigApplicationContext ac = new AnnotationConfigApplicationContext(JavaConfig.class);
-		ac.addBeanFactoryPostProcessor(new CustomBeanFactoryPostProcessor());
 		User user = ac.getBean(User.class);
 		System.out.println(user.toString());
 	}
 
 	@Test
 	public void testAnnotationConfigApplicationContextRegist() {
-		/*AnnotationConfigApplicationContext ac = new AnnotationConfigApplicationContext();
-		ac.register(User.class);
+		// spring容器初始化 默认创建 DefaultListableBeanFactory
+		AnnotationConfigApplicationContext ac = new AnnotationConfigApplicationContext();
+
+		ac.addBeanFactoryPostProcessor(new CustomBeanFactoryPostProcessor());
+
+		// 将Java对象注册到 BeanDefinition
+		ac.register(JavaConfig.class);
+		// 实例化和初始化bean
+		ac.refresh();
 		User user = ac.getBean(User.class);
-		System.out.println(user.toString());*/
+		System.out.println(user);
 	}
 
 	@Test
@@ -67,6 +73,33 @@ public class ApplicationTest {
 
 	/**
 	 * 例子：https://blog.csdn.net/zhanyu1/article/details/83114684
+	 *
+	 * BeanFactoryPostProcessor接口是针对bean容器的，它的实现类可以在当前BeanFactory初始化（spring容器加载bean定义文件）后，
+	 * bean实例化之前修改bean的定义属性，达到影响之后实例化bean的效果。
+	 * 也就是说，Spring允许BeanFactoryPostProcessor在容器实例化任何其它bean之前读取配置元数据，
+	 * 并可以根据需要进行修改，例如可以把bean的scope从singleton改为prototype，也可以把property的值给修改掉。
+	 * 可以同时配置多个BeanFactoryPostProcessor，并通过设置’order’属性来控制各个BeanFactoryPostProcessor的执行次序。
+	 *
+	 * BeanPostProcessor能在spring容器实例化bean之后，在执行bean的初始化方法前后，添加一些自己的处理逻辑。初始化方法包括以下两种：
+	 *
+	 * 1、实现InitializingBean接口的bean，对应方法为afterPropertiesSet
+	 * 2、xml定义中，通过init-method设置的方法
+	 *
+	 * BeanPostProcessor是BeanFactoryPostProcessor之后执行的。
+	 * 如果自定义了多个的BeanPostProcessor的实现类，通过实现Ordered接口，设置order属性，可以按照顺序执行实现类的方法
+	 *
+	 * InitializingBean接口为bean提供了初始化方法的方式，它只包括afterPropertiesSet方法，
+	 * 凡是继承该接口的类，在初始化bean的时候都会执行该方法。
+	 * 在Spring初始化bean的时候，如果该bean实现了InitializingBean接口，并且同时在配置文件中指定了init-method，
+	 * 系统则是先调用afterPropertieSet()方法，然后再调用init-method中指定的方法。
+	 * 那么这种方式在spring中是怎么实现的呢，通过查看Spring加载bean的源码类 AbstractAutowireCapableBeanFactory 可以看出其中的奥妙，
+	 * AbstractAutowireCapableBeanFactory 类中的invokeInitMethods说的非常清楚
+	 *
+	 * 总结：分析以上结果：在bean实例化之前，首先执行BeanFactoryPostProcessor实现类的方法，
+	 * 然后通过调用bean的无参构造函数实例化bean，并调用set方法注入属性值。bean实例化后，
+	 * 执行初始化操作，调用两个初始化方法（两个初始化方法的顺序：先执行afterPropertiesSet，
+	 * 再执行init-method）前后，执行了BeanPostProcessor实现类的两个方法。
+	 *
 	 */
 	@Test
 	public void postProcessorTest() {

@@ -126,7 +126,9 @@ public class AnnotationConfigApplicationContext extends GenericApplicationContex
 	public AnnotationConfigApplicationContext(Class<?>... componentClasses) {
 		// 调用自己的默认无参构造器，在调用自身构造器前，会先调用父类的构造器
 		this();
+		//注册Java对象到BeanDefinitionMap中
 		register(componentClasses);
+		// 执行bean的准备阶段以及实例化和初始化阶段
 		refresh();
 	}
 

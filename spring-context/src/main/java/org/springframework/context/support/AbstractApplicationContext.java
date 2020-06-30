@@ -37,6 +37,7 @@ import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
+import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.beans.support.ResourceEditorRegistrar;
@@ -542,11 +543,26 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 				// 具体的子类可以在这步的时候添加一些特殊的 BeanFactoryPostProcessor 的实现类或做点什么事
 				postProcessBeanFactory(beanFactory);
 
+				// ------------------------测试代码-------------------------------
+				// 在单元测试testAnnotationConfigApplicationContext中这里报错：No bean named 'user' available
+				//说明在这个节点还没有将User对象注册到BeanDefinitionMap中,只是把javaConfig对象注册到BeanDefinitionMap中。
+				//BeanDefinition user = beanFactory.getBeanDefinition("user");
+				BeanDefinition javaConfig = beanFactory.getBeanDefinition("javaConfig");
+				String beanClassName = javaConfig.getBeanClassName();
+				System.out.println(beanClassName);
+				// ------------------------测试代码-------------------------------
+
 				// Invoke factory processors registered as beans in the context.
 				// 调用 BeanFactoryPostProcessor 各个实现类的 postProcessBeanFactory(factory) 回调方法
 				//在spring的环境中去执行已经被注册的 factory processors
 				//设置执行自定义的ProcessBeanFactory 和spring内部自己定义的
 				invokeBeanFactoryPostProcessors(beanFactory);
+
+				// ------------------------测试代码-------------------------------
+				/*BeanDefinition user = beanFactory.getBeanDefinition("user");
+				String beanClassName = user.getBeanClassName();
+				System.out.println(beanClassName);*/
+				// ------------------------测试代码-------------------------------
 
 				// Register bean processors that intercept bean creation.
 				// 注册 BeanPostProcessor 的实现类，注意看和 BeanFactoryPostProcessor 的区别
