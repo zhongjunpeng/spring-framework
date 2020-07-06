@@ -547,9 +547,9 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 				// 在单元测试testAnnotationConfigApplicationContext中这里报错：No bean named 'user' available
 				//说明在这个节点还没有将User对象注册到BeanDefinitionMap中,只是把javaConfig对象注册到BeanDefinitionMap中。
 				//BeanDefinition user = beanFactory.getBeanDefinition("user");
-				BeanDefinition javaConfig = beanFactory.getBeanDefinition("javaConfig");
+				/*BeanDefinition javaConfig = beanFactory.getBeanDefinition("javaConfig");
 				String beanClassName = javaConfig.getBeanClassName();
-				System.out.println(beanClassName);
+				System.out.println(beanClassName);*/
 				// ------------------------测试代码-------------------------------
 
 				// Invoke factory processors registered as beans in the context.

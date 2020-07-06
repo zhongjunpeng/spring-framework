@@ -53,9 +53,8 @@ public class ApplicationTest {
 	public void testAnnotationConfigApplicationContextRegist() {
 		// spring容器初始化 默认创建 DefaultListableBeanFactory
 		AnnotationConfigApplicationContext ac = new AnnotationConfigApplicationContext();
-
+		// 创建 beanFactory 后置处理器
 		ac.addBeanFactoryPostProcessor(new CustomBeanFactoryPostProcessor());
-
 		// 将Java对象注册到 BeanDefinition
 		ac.register(JavaConfig.class);
 		// 实例化和初始化bean
