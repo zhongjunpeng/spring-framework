@@ -842,7 +842,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 			// 是RootBeanDefinition，这时候就使用getMergedLocalBeanDefinition方法做了一次转化，
 			// 将非RootBeanDefinition转换为RootBeanDefinition以供后续操作。
 			RootBeanDefinition bd = getMergedLocalBeanDefinition(beanName);
-			// 判断是否非抽象、非懒加载的 singletons。如果配置了 'abstract = true'，那是不需要初始化的
+			// 判断是否非抽象、非懒加载的 singletons。如果配置了 'abstract = true'，那是不需要实例化的
 			if (!bd.isAbstract() && bd.isSingleton() && !bd.isLazyInit()) {
 				// 处理 FactoryBean
 				if (isFactoryBean(beanName)) {

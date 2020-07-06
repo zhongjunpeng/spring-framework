@@ -121,4 +121,25 @@ public class ApplicationTest {
 		ExecutorService executorService = Executors.newFixedThreadPool(1);
 		//executorService.execute();
 	}
+
+	@Test
+	public void getUser(){
+		ClassPathXmlApplicationContext applicationContext = new ClassPathXmlApplicationContext("xml/spring-config.xml");
+		User user1 = (User) applicationContext.getBean("user1");
+		User user11 = (User) applicationContext.getBean("user1");
+		System.out.println(user1);
+		System.out.println(user11);
+		User user2 = (User) applicationContext.getBean("user2");
+		User user22 = (User) applicationContext.getBean("user2");
+		System.out.println(user2);
+		System.out.println(user22);
+		User user3 = (User) applicationContext.getBean("user3");
+		User user33 = (User) applicationContext.getBean("user3");
+		System.out.println(user3);
+		System.out.println(user33);
+		User user4 = (User) applicationContext.getBean("userFactoryBean");
+		System.out.println(user4);
+		UserFactoryBean userFactoryBean = (UserFactoryBean) applicationContext.getBean("&userFactoryBean");
+		System.out.println(userFactoryBean);
+	}
 }

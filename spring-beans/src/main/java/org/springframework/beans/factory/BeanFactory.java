@@ -116,6 +116,11 @@ import org.springframework.lang.Nullable;
 public interface BeanFactory {
 
 	/**
+	 * 对FactoryBean的转义，提供获取FactoryBean的方式
+	 * 如果使用bean的名字检索FactoryBean得到的对象是工厂生成的对象
+	 * 如果需要得到工厂本身，需要转义
+	 *
+	 *
 	 * Used to dereference a {@link FactoryBean} instance and distinguish it from
 	 * beans <i>created</i> by the FactoryBean. For example, if the bean named
 	 * {@code myJndiObject} is a FactoryBean, getting {@code &myJndiObject}
@@ -136,6 +141,7 @@ public interface BeanFactory {
 	 * @throws NoSuchBeanDefinitionException if there is no bean with the specified name
 	 * @throws BeansException if the bean could not be obtained
 	 */
+	// 根据bean名字从容器中获取bean实例
 	// 调用getBean(...)方法，触发Bean的加载流程
 	Object getBean(String name) throws BeansException;
 
@@ -186,6 +192,7 @@ public interface BeanFactory {
 	 * @since 3.0
 	 * @see ListableBeanFactory
 	 */
+	// 按照类型获取bean实例
 	<T> T getBean(Class<T> requiredType) throws BeansException;
 
 	/**
