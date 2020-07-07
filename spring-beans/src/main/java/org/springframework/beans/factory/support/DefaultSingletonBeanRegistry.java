@@ -87,6 +87,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	private final Set<String> registeredSingletons = new LinkedHashSet<>(256);
 
 	/** Names of beans that are currently in creation. */
+	// 三级缓存是用来解决循环依赖，而这个缓存就是用来检测是否存在循环依赖的
 	private final Set<String> singletonsCurrentlyInCreation =
 			Collections.newSetFromMap(new ConcurrentHashMap<>(16));
 
@@ -136,6 +137,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 */
 	protected void addSingleton(String beanName, Object singletonObject) {
 		synchronized (this.singletonObjects) {
+			// bean实例完成创建之后，只保留一级缓存以及注册beanName的顺序，二级缓存以及其他的清除
 			this.singletonObjects.put(beanName, singletonObject);
 			this.singletonFactories.remove(beanName);
 			this.earlySingletonObjects.remove(beanName);
@@ -178,22 +180,26 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 */
 	@Nullable
 	protected Object getSingleton(String beanName, boolean allowEarlyReference) {
-		// 从单例缓存中加载bean，缓存时一个ConcurrentHashMap
+		// 一级缓存：从单例缓存中加载bean，缓存是一个ConcurrentHashMap
 		Object singletonObject = this.singletonObjects.get(beanName);
 		// 缓存中的bean为空，并且当前bean正在创建。
+		// 如果完备的单例还没有创建出来，创建中的Bean的名字会被保存在singletonsCurrentlyInCreation中
 		if (singletonObject == null && isSingletonCurrentlyInCreation(beanName)) {
+			// 尝试给一级缓存对象加锁，因为接下来就要对缓存对象操作了
 			synchronized (this.singletonObjects) {
-				// 从 earlySingletonObjects 获取。HashMap结构
+				// 尝试从二级缓存 earlySingletonObjects 获取。HashMap结构。
+				// earlySingletonObjects这个存储还没进行属性添加操作的Bean实例缓存中获取
 				singletonObject = this.earlySingletonObjects.get(beanName);
-				// 无且允许提取创建
+				// 无且允许提取创建，allowEarlyReference为true，表示bean允许被循环引用
 				if (singletonObject == null && allowEarlyReference) {
-					// 从 singletonFactory 中获取对应的 ObjectFactory。HashMap结构
+					// 从三级缓存 singletonFactory 中获取对应的 ObjectFactory。HashMap结构
 					ObjectFactory<?> singletonFactory = this.singletonFactories.get(beanName);
 					if (singletonFactory != null) {
+						// 调用单例工厂的getObject方法返回对象实例
 						singletonObject = singletonFactory.getObject();
-						// 添加 bean 到 earlySingletonObjects 中
+						// 添加 bean 到二级缓存 earlySingletonObjects 中
 						this.earlySingletonObjects.put(beanName, singletonObject);
-						// 从 singletonFactories 中移除对应的 ObjectFactory
+						// 从三级缓存 singletonFactories 中移除对应的 ObjectFactory
 						this.singletonFactories.remove(beanName);
 					}
 				}
@@ -262,7 +268,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 					afterSingletonCreation(beanName);
 				}
 				if (newSingleton) {
-					// 加入缓存中
+					// 加入一级缓存中，删除二级缓存中的bean
 					addSingleton(beanName, singletonObject);
 				}
 			}
@@ -357,6 +363,8 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 * @see #isSingletonCurrentlyInCreation
 	 */
 	protected void beforeSingletonCreation(String beanName) {
+		// inCreationCheckExclusions 直接缓存当前不能加载的bean
+		// 主要用在web容器的拦截器里，所以这里可以忽略，因为肯定是不存在的
 		if (!this.inCreationCheckExclusions.contains(beanName) && !this.singletonsCurrentlyInCreation.add(beanName)) {
 			throw new BeanCurrentlyInCreationException(beanName);
 		}

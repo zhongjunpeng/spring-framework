@@ -484,13 +484,18 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// Make sure bean class is actually resolved at this point, and
 		// clone the bean definition in case of a dynamically resolved Class
 		// which cannot be stored in the shared merged bean definition.
+		// 判断需要创建的Bean是否可以实例化，即是否可以通过当前的类加载器加载
 		Class<?> resolvedClass = resolveBeanClass(mbd, beanName);
 		if (resolvedClass != null && !mbd.hasBeanClass() && mbd.getBeanClassName() != null) {
+			// 克隆一份BeanDefinition，用来设置加载出来的class对象
+			// 之所以后续用该副本操作，是因为不希望将解析出来的class绑定到缓存里的BeanDefinition
+			// 因为class有可能是每次都需要动态解析出来的
 			mbdToUse = new RootBeanDefinition(mbd);
 			mbdToUse.setBeanClass(resolvedClass);
 		}
 
 		// Prepare method overrides.
+		// 校验和准备Bean中的方法覆盖
 		try {
 			mbdToUse.prepareMethodOverrides();
 		}
@@ -501,6 +506,14 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 		try {
 			// Give BeanPostProcessors a chance to return a proxy instead of the target bean instance.
+			/**
+			 * org.springframework.beans.factory.support.AbstractAutowireCapableBeanFactory.resolveBeforeInstantiation
+			 * 作用：在实例化之前解析是否有快捷创建的Bean，既是通过postProcessBeforeInstantiation返回的Bean
+			 * 内部调用两个重要的方法：
+			 *   1、applyBeanPostProcessorsBeforeInstantiation：内部遍历调用postProcessBeforeInstantiation方法【在实例化之前调用】
+			 *   2、applyBeanPostProcessorsAfterInitialization：如果postProcessBeforeInstantiation方法返回了快捷的Bean，
+			 *   	内部遍历调用postProcessBeforeInstantiation方法【在初始化之后调用】
+			 */
 			Object bean = resolveBeforeInstantiation(beanName, mbdToUse);
 			if (bean != null) {
 				return bean;
