@@ -49,6 +49,24 @@ public class ApplicationTest {
 		System.out.println(user.toString());
 	}
 
+
+	/**
+	 * Spring 解决循环依赖的方案：
+	 * Spring 在创建 bean 的时候并不是等它完全完成，
+	 * 而是在创建过程中将创建中的 bean 的 ObjectFactory 提前曝光（即加入到 singletonFactories 缓存中），
+	 * 这样一旦下一个 bean 创建的时候需要依赖 bean ，则直接使用 ObjectFactory 的 getObject() 获取了，
+	 * 也就是 getSingleton()中的代码片段了。
+	 *
+	 * 循环依赖 Spring 解决的过程：首先 A 完成初始化第一步并将自己提前曝光出来（通过 ObjectFactory 将自己提前曝光），
+	 * 在初始化的时候，发现自己依赖对象 B，此时就会去尝试 get(B)，这个时候发现 B 还没有被创建出来，然后 B 就走创建流程，
+	 * 在 B 初始化的时候，同样发现自己依赖 C，C 也没有被创建出来，这个时候 C 又开始初始化进程，但是在初始化的过程中发现自己依赖 A，
+	 * 于是尝试 get(A)，这个时候由于 A 已经添加至缓存中（一般都是添加至三级缓存 singletonFactories ），
+	 * 通过 ObjectFactory 提前曝光，所以可以通过 ObjectFactory.getObject() 拿到 A 对象，C 拿到 A 对象后顺利完成初始化，
+	 * 然后将自己添加到一级缓存中，回到 B ，B 也可以拿到 C 对象，完成初始化，A 可以顺利拿到 B 完成初始化。
+	 * 到这里整个链路就已经完成了初始化过程了。
+	 *
+	 * 在 DefaultSingletonBeanRegistry 类中
+	 */
 	@Test
 	public void testAnnotationConfigApplicationContextRegist() {
 		// spring容器初始化 默认创建 DefaultListableBeanFactory
