@@ -133,7 +133,9 @@ public abstract class AbstractRefreshableApplicationContext extends AbstractAppl
 			//设置 BeanFactory 的两个配置属性：是否允许 Bean 覆盖、是否允许循环引用
 			customizeBeanFactory(beanFactory);
 			//加载 Bean 到 BeanFactory中
+			//加载BeanDefinition,for xml,使用了委派模式
 			loadBeanDefinitions(beanFactory);
+			//将 BeanFactory 设置为 Spring 容器的内部 BeanFactory
 			this.beanFactory = beanFactory;
 		}
 		catch (IOException ex) {

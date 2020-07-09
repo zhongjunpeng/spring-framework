@@ -874,6 +874,12 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		}
 
 		// Trigger post-initialization callback for all applicable beans...
+		// bean已完全处理完了
+		// @EventListener标注的方法被DefaultEventListenerFactory包装成ApplicationListenerMethodAdapter
+		//@EventListener中的classes就是事件对象
+		//ApplicationListenerMethodApdapter注册到ApplicationContext中。
+		//等待是事件源发布通知
+		//通知后执行的逻辑就是标注@EventListener的方法的逻辑
 		for (String beanName : beanNames) {
 			Object singletonInstance = getSingleton(beanName);
 			if (singletonInstance instanceof SmartInitializingSingleton) {
@@ -915,6 +921,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		}
 
 		// 从map中获取指定 beanName 的 BeanDefinition
+		//看看beanName是否已经存在容器里，存在则表明已经被注册过
 		BeanDefinition existingDefinition = this.beanDefinitionMap.get(beanName);
 		if (existingDefinition != null) {
 			// 如果存在但是不允许覆盖，抛出异常
@@ -973,7 +980,12 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		}
 
 		//重新设置 beanName 对应的缓存
+		//检查是否有同名的BeanDefinition已经在IOC容器中注册
 		if (existingDefinition != null || containsSingleton(beanName)) {
+			//尝试重置所有已经注册过的BeanDefinition的缓存，包括BeanDefinition
+			//的父类以及合并的beanDefinition的缓存，所谓的合并BeanDefinition
+			//指的的有parent属性的beandefinition，该BeanDefinition会把parent的
+			//BeanDefinition属性合并在一块
 			resetBeanDefinition(beanName);
 		}
 		else if (isConfigurationFrozen()) {

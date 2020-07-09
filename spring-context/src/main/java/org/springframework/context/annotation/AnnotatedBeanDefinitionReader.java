@@ -241,11 +241,14 @@ public class AnnotatedBeanDefinitionReader {
 			return;
 		}
 
+		//用来创建 bean 的 supplier，会替代掉 bean 本身的创建方法
+		//instanceSupplier 一般情况下为 null
 		abd.setInstanceSupplier(instanceSupplier);
+		//此行代码处理 scope 注解，本例中 scope 是默认值 singleton
 		ScopeMetadata scopeMetadata = this.scopeMetadataResolver.resolveScopeMetadata(abd);
 		abd.setScope(scopeMetadata.getScopeName());
 		/**
-		 * 生成类的名字通过beanNameGenerator
+		 * 生成类的名字通过beanNameGenerator,获取beanName
 		 */
 		String beanName = (name != null ? name : this.beanNameGenerator.generateBeanName(abd, this.registry));
 
@@ -282,12 +285,13 @@ public class AnnotatedBeanDefinitionReader {
 				}
 			}
 		}
+		//主要提供对BeanDefinition的一些定制化操作
 		for (BeanDefinitionCustomizer customizer : definitionCustomizers) {
 			customizer.customize(abd);
 		}
 
 		/**
-		 * 这个BeanDefinitionHolder也是一个数据结构
+		 * 这个BeanDefinitionHolder也是一个数据结构,用 BeanDefinitionHolder 包装 BeanDefinition
 		 */
 		BeanDefinitionHolder definitionHolder = new BeanDefinitionHolder(abd, beanName);
 

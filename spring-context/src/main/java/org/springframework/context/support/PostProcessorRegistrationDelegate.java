@@ -51,18 +51,39 @@ final class PostProcessorRegistrationDelegate {
 	private PostProcessorRegistrationDelegate() {
 	}
 
-
+	/**
+	 * 调用BeanFactoryPostProcessor
+	 * 主要是分情况处理不同类型的BeanFactoryPostProcessors。
+	 * BeanFacotryPostProcessors主要分为两类，一类是BeanDefinitionRegistry的BeanFactoryPostProcessor，另外一类是常规的BeanFactoryPostProcessor。
+	 * 优先处理前者。同时，这两种后置处理器又被分为从参数里传入和从容器里获取的，最终要将从参数里获取的和从容器里获取的合并在一起。
+	 * 合并的时候又分为实现了PriorityOrder和普通Order以及没有实现这两个接口的，实现了PriorityOrdered的先执行，
+	 * 同时是按照PriorityOrdered顺序执行的，其次再到Order，按照Order执行，最后才是没实现这两个接口的，
+	 * 先执行完BeanDefinitionRegistryPostProcessor的invokeBeanDefinitionRegistryPostProcessors方法，
+	 * 再对BeanDefinitionRegistryPostProcessor执行invokeBeanFactoryPostProcessors方法，
+	 * 之后再对常规的BeanFacotryPostProcessors执行invokeBeanFactoryPostProcessors方法
+	 * @参数 beanFactory 应用上下文的 BeanFactory 实例
+	 * @参数 beanFactoryPostProcessors 应用上下文指定要执行的 BeanFactoryPostProcessor
+	 **/
 	public static void invokeBeanFactoryPostProcessors(
 			ConfigurableListableBeanFactory beanFactory, List<BeanFactoryPostProcessor> beanFactoryPostProcessors) {
 
-		// Invoke BeanDefinitionRegistryPostProcessors first, if any.
+		// Invoke BeanDefinitionRegistryPostProcessors first, if any.\
+		// 如果有BeanDefinitionRegistryPostProcessor的话优先执行
 		Set<String> processedBeans = new HashSet<>();
 
+		//如果是BeanDefinitionRegistry类型的话
 		if (beanFactory instanceof BeanDefinitionRegistry) {
 			BeanDefinitionRegistry registry = (BeanDefinitionRegistry) beanFactory;
+			// 用于记录常规 BeanFactoryPostProcessor
 			List<BeanFactoryPostProcessor> regularPostProcessors = new ArrayList<>();
+			// 用于记录 BeanDefinitionRegistryPostProcessor
 			List<BeanDefinitionRegistryPostProcessor> registryProcessors = new ArrayList<>();
 
+			// 遍历所有参数传递进来的 BeanFactoryPostProcessor(它们并没有作为bean注册在容器中)
+			// 将所有参数传入的 BeanFactoryPostProcessor 分成两组 :
+			// BeanDefinitionRegistryPostProcessor 和常规 BeanFactoryPostProcessor
+			// 1.如果是BeanDefinitionRegistryPostProcessor，现在执行postProcessBeanDefinitionRegistry()，
+			// 2.否则记录为一个常规 BeanFactoryPostProcessor，暂时不执行处理
 			for (BeanFactoryPostProcessor postProcessor : beanFactoryPostProcessors) {
 				if (postProcessor instanceof BeanDefinitionRegistryPostProcessor) {
 					BeanDefinitionRegistryPostProcessor registryProcessor =
@@ -79,9 +100,12 @@ final class PostProcessorRegistrationDelegate {
 			// uninitialized to let the bean factory post-processors apply to them!
 			// Separate between BeanDefinitionRegistryPostProcessors that implement
 			// PriorityOrdered, Ordered, and the rest.
+			//用于记录当前正要被执行的BeanDefinitionRegistryPostProcessor
 			List<BeanDefinitionRegistryPostProcessor> currentRegistryProcessors = new ArrayList<>();
 
 			// First, invoke the BeanDefinitionRegistryPostProcessors that implement PriorityOrdered.
+			// 首先， 对 实现了优先级顺序接口的Bean形式 BeanDefinitionRegistryPostProcessor进行调用
+			// 找出所有容器中注册为BeanDefinitionRegistryPostProcessor的postProcessor名字数组
 			String[] postProcessorNames =
 					beanFactory.getBeanNamesForType(BeanDefinitionRegistryPostProcessor.class, true, false);
 			//这个地方可以得到一个BeanFactoryPostProcessor，因为是spring默认在最开始自己注册的
@@ -94,6 +118,7 @@ final class PostProcessorRegistrationDelegate {
 			//在这个地方断点可以知道这个类叫做ConfigurationClassPostProcessor
 			//ConfigurationClassPostProcessor那么这个类能干嘛呢？可以参考源码
 			for (String ppName : postProcessorNames) {
+				//遍历容器，将BeanDefinitionRegistryPostProcessor类型的后置处理器Bean实例给添加到当前的注册处理器中
 				if (beanFactory.isTypeMatch(ppName, PriorityOrdered.class)) {
 					currentRegistryProcessors.add(beanFactory.getBean(ppName, BeanDefinitionRegistryPostProcessor.class));
 					processedBeans.add(ppName);
@@ -158,6 +183,9 @@ final class PostProcessorRegistrationDelegate {
 
 		// Do not initialize FactoryBeans here: We need to leave all regular beans
 		// uninitialized to let the bean factory post-processors apply to them!
+		// 上面逻辑执行了以参数形式传入的BeanDefinitionRegistryPostProcessor以及常规的BeanFactoryPostProcessor
+		// 也执行了容器里面的BeanDefinitionRegistryPostProcessor，故还剩下容器里面的BeanFactoryPostProcessor需要去处理
+		// 逻辑是一样的，也分为实现了PriorityOrdered和Ordered以及两个都没实现的
 		String[] postProcessorNames =
 				beanFactory.getBeanNamesForType(BeanFactoryPostProcessor.class, true, false);
 
