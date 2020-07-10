@@ -380,7 +380,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 
 				// Create bean instance.
 				//bean 实例化
-				if (mbd.isSingleton()) {// 单例模式
+				if (mbd.isSingleton()) { // 单例模式
 					sharedInstance = getSingleton(beanName, new ObjectFactory<Object>() {
 						@Override
 						public Object getObject() throws BeansException {

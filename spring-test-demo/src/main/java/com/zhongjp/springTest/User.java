@@ -47,7 +47,7 @@ public class User {
 		this.addr = addr;
 	}
 
-/*	@Override
+	@Override
 	public String toString() {
 		return "User{" +
 				"uid=" + uid +
@@ -56,5 +56,5 @@ public class User {
 				", tel='" + tel + '\'' +
 				", addr='" + addr + '\'' +
 				'}';
-	}*/
+	}
 }

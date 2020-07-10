@@ -10,4 +10,6 @@
 		<property name="tel" value="12312313"/>
 		<property name="pwd" value="sgahg;ha"/>
  	</bean>
+
+<!--	<bean id="customInstantiationAwareBeanPostProcessor" class="com.zhongjp.springTest.beanPostProcessor.CustomInstantiationAwareBeanPostProcessor"></bean>-->
 </beans>

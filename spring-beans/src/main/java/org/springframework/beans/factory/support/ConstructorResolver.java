@@ -124,11 +124,15 @@ class ConstructorResolver {
 		ArgumentsHolder argsHolderToUse = null;
 		Object[] argsToUse = null;
 
+		// explicit通过getBean方法传入
+		// 如果getBean方法调用的时候指定方法参数，那么直接使用
 		if (explicitArgs != null) {
 			argsToUse = explicitArgs;
 		}
 		else {
+			// 如果在getBean方法时候没有指定则尝试从配置文件中解析
 			Object[] argsToResolve = null;
+			// 尝试从缓存中获取获取参数
 			synchronized (mbd.constructorArgumentLock) {
 				constructorToUse = (Constructor<?>) mbd.resolvedConstructorOrFactoryMethod;
 				if (constructorToUse != null && mbd.constructorArgumentsResolved) {
@@ -139,7 +143,11 @@ class ConstructorResolver {
 					}
 				}
 			}
+			// 如果缓存中存在
 			if (argsToResolve != null) {
+				// 解析参数类型，如给定方法的构造函数A(int,int)则通过此方法后就会
+				// 把配置中("1","1")转换为(1,1)
+				// 缓存中的值可能是原始值也可能是最终值，在这里做处理
 				argsToUse = resolvePreparedArguments(beanName, mbd, bw, constructorToUse, argsToResolve, true);
 			}
 		}
@@ -377,6 +385,7 @@ class ConstructorResolver {
 			String beanName, RootBeanDefinition mbd, @Nullable Object[] explicitArgs) {
 
 		BeanWrapperImpl bw = new BeanWrapperImpl();
+		// 向BeanWrapper对象中添加 ConversionService 对象和属性编辑器 PropertyEditor 对象
 		this.beanFactory.initBeanWrapper(bw);
 
 		Object factoryBean;

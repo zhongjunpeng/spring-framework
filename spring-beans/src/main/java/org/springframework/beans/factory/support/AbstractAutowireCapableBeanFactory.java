@@ -579,6 +579,20 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			//1.工厂方法创建
 			//2.构造方法的方式注入
 			//3.无参构造方法注入
+
+			/**
+			 * 对于 #createBeanInstance(...) 方法而言，他就是选择合适实例化策略来为 bean 创建实例对象，具体的策略有：
+			 *
+			 * Supplier 回调方式
+			 * 工厂方法初始化
+			 * 构造函数自动注入初始化
+			 * 默认构造函数注入。
+			 * 其中，工厂方法初始化和构造函数自动注入初始化两种方式最为复杂，主要是因为构造函数和构造参数的不确定性，
+			 * Spring 需要花大量的精力来确定构造函数和构造参数，如果确定了则好办，直接选择实例化策略即可。
+			 *
+			 * 当然，在实例化的时候会根据是否有需要覆盖或者动态替换掉的方法，因为存在覆盖或者织入的话需要创建动态代理将方法织入，
+			 * 这个时候就只能选择 CGLIB 的方式来实例化，否则直接利用反射的方式即可，方便快捷。
+			 */
 			instanceWrapper = createBeanInstance(beanName, mbd, args);
 		}
 		// 获取被包装的Bean，后续对bean的改动相当于对Wrapper的改动，反之亦然
@@ -638,6 +652,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		Object exposedObject = bean;
 		try {
 			// 填充bean实例的属性
+			// 该函数的作用是将 BeanDefinition 中的属性值赋值给 BeanWrapper 实例对象
 			populateBean(beanName, mbd, instanceWrapper);
 
 			// 初始化bean，过程如下：
@@ -1395,6 +1410,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	protected BeanWrapper instantiateUsingFactoryMethod(
 			String beanName, RootBeanDefinition mbd, @Nullable Object[] explicitArgs) {
 
+		// ConstructorResolver 是构造方法或者工厂类初始化 bean 的委托类
 		return new ConstructorResolver(this).instantiateUsingFactoryMethod(beanName, mbd, explicitArgs);
 	}
 
@@ -1441,6 +1457,10 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// Give any InstantiationAwareBeanPostProcessors the opportunity to modify the
 		// state of the bean before properties are set. This can be used, for example,
 		// to support styles of field injection.
+		// 给InstantiationAwareBeanPostProcessors最后一次机会在属性注入前修改Bean的属性值，也可以控制是否继续填充Bean
+		// 具体通过调用postProcessAfterInstantiation方法，如果调用返回false,表示不必继续进行依赖注入，直接返回
+		// 主要是让用户可以自定义属性注入。比如用户实现一个 InstantiationAwareBeanPostProcessor 类型的后置处理器，
+		// 并通过 postProcessAfterInstantiation 方法向 bean 的成员变量注入自定义的信息。
 		if (!mbd.isSynthetic() && hasInstantiationAwareBeanPostProcessors()) {
 			for (BeanPostProcessor bp : getBeanPostProcessors()) {
 				if (bp instanceof InstantiationAwareBeanPostProcessor) {

@@ -73,6 +73,7 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 						throw new BeanInstantiationException(clazz, "Specified class is an interface");
 					}
 					try {
+						// 从 clazz 中，获得构造方法
 						if (System.getSecurityManager() != null) {
 							constructorToUse = AccessController.doPrivileged(
 									(PrivilegedExceptionAction<Constructor<?>>) clazz::getDeclaredConstructor);
@@ -92,6 +93,7 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 		}
 		else {
 			// Must generate CGLIB subclass.
+			// 生成 CGLIB 创建的子类对象
 			return instantiateWithMethodInjection(bd, beanName, owner);
 		}
 	}
