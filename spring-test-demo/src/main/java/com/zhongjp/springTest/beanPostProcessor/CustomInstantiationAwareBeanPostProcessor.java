@@ -5,6 +5,7 @@ import org.springframework.beans.BeansException;
 import org.springframework.beans.MutablePropertyValues;
 import org.springframework.beans.PropertyValues;
 import org.springframework.beans.factory.config.InstantiationAwareBeanPostProcessor;
+import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
 
 import java.beans.PropertyDescriptor;
@@ -33,12 +34,17 @@ import java.util.HashMap;
  */
 
 @Component
+@Configuration
 public class CustomInstantiationAwareBeanPostProcessor implements InstantiationAwareBeanPostProcessor {
 	/**
 	 * 在实例化之前调用，如果返回null，一切按照正常顺序执行，如果返回的是一个实例的对象，那么这个将会跳过实例化、初始化的过程
 	 * @param beanClass
 	 * @param beanName
 	 * @return
+	 *
+	 * AbstractBeanFactory#createBean() --> AbstractAutowireCapableBeanFactory#resolveBeforeInstantiation()
+	 * --> AbstractAutowireCapableBeanFactory#applyBeanPostProcessorsBeforeInstantiation()
+	 * --> InstantiationAwareBeanPostProcessor#postProcessBeforeInstantiation() --> 实现类
 	 */
 	@Override
 	public Object postProcessBeforeInstantiation(Class<?> beanClass, String beanName) throws BeansException {
@@ -56,6 +62,10 @@ public class CustomInstantiationAwareBeanPostProcessor implements InstantiationA
 	 * @param beanName
 	 * @return
 	 * @throws BeansException
+	 *
+	 * AbstractBeanFactory#createBean() --> AbstractAutowireCapableBeanFactory#doCreateBean()
+	 * --> AbstractAutowireCapableBeanFactory#populateBean()
+	 * --> InstantiationAwareBeanPostProcessor#postProcessAfterInstantiation() --> 实现类
 	 */
 	@Override
 	public boolean postProcessAfterInstantiation(Object bean, String beanName) throws BeansException {
@@ -70,13 +80,12 @@ public class CustomInstantiationAwareBeanPostProcessor implements InstantiationA
 	/**
 	 * 实例化之后调用，属性填充之前
 	 * @param pvs PropertyValues对象，用于封装指定类的对象，简单来说就是PropertyValue的集合，里面相当于以key-value形式存放类的属性和值
-	 * @param pds PropertyDescriptor对象数组，PropertyDescriptor相当于存储类的属性，不过可以调用set，get方法设置和获取对应属性的值
 	 * @param bean 当前的bean
 	 * @param beanName beanName
 	 * @return 如果返回null，那么将不会进行后续的属性填充，比如依赖注入等，如果返回的pvs额外的添加了属性，那么后续会填充到该类对应的属性中。
 	 */
 	@Override
-	public PropertyValues postProcessPropertyValues(PropertyValues pvs, PropertyDescriptor[] pds, Object bean, String beanName) throws BeansException {
+	public PropertyValues postProcessProperties(PropertyValues pvs, Object bean, String beanName) throws BeansException {
 		if (pvs instanceof MutablePropertyValues && bean instanceof User){
 			MutablePropertyValues mutablePropertyValues= (MutablePropertyValues) pvs;
 			HashMap<Object, Object> map = new HashMap<>();

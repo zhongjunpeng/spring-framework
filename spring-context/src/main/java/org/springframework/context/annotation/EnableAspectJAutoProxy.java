@@ -134,6 +134,9 @@ public @interface EnableAspectJAutoProxy {
 	 * Off by default, i.e. no guarantees that {@code AopContext} access will work.
 	 * @since 4.3.1
 	 */
+	// 解决内部调用不能使用代理的场景 默认为false表示不处理
+	// true则表示这个代理对象的副本就可以通过AopContext。currentProxy（）获得 （ThreadLocal里面）
+	// 从而我们可以很方便得在Spring框架上下文中拿到当前代理对象（处理事务时很方便）
 	boolean exposeProxy() default false;
 
 }

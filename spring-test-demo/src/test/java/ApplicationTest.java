@@ -13,7 +13,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-@ComponentScan(value = "com.zhongjp.springTest.beanPostProcessor.*")
+@ComponentScan(value = "com.zhongjp.springTest.*")
 public class ApplicationTest {
 
 	/**
@@ -51,6 +51,13 @@ public class ApplicationTest {
 		System.out.println(user.toString());
 	}
 
+	@Test
+	public void testAnnotationConfigApplicationContext2(){
+		AnnotationConfigApplicationContext ac = new AnnotationConfigApplicationContext(User.class);
+		User user = ac.getBean(User.class);
+		System.out.println(user.toString());
+	}
+
 
 	/**
 	 * Spring 解决循环依赖的方案：
@@ -77,6 +84,18 @@ public class ApplicationTest {
 		ac.addBeanFactoryPostProcessor(new CustomBeanFactoryPostProcessor());
 		// 将Java对象注册到 BeanDefinition
 		ac.register(JavaConfig.class);
+		// 实例化和初始化bean
+		ac.refresh();
+		User user = ac.getBean(User.class);
+		System.out.println(user);
+	}
+
+	@Test
+	public void testAnnotationConfigApplicationContextRegist2() {
+		// spring容器初始化 默认创建 DefaultListableBeanFactory
+		AnnotationConfigApplicationContext ac = new AnnotationConfigApplicationContext();
+		// 将Java对象注册到 BeanDefinition
+		ac.register(User.class);
 		// 实例化和初始化bean
 		ac.refresh();
 		User user = ac.getBean(User.class);

@@ -472,9 +472,14 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 * @param dependentBeanName the name of the dependent bean
 	 */
 	public void registerDependentBean(String beanName, String dependentBeanName) {
+		//根据别名获取真正的beanName，传入beanName就啥都获取不到
 		String canonicalName = canonicalName(beanName);
 
 		synchronized (this.dependentBeanMap) {
+			// computeIfAbsent:若key对应的value为空，会将第二个参数的返回值存入并返回
+			//dependentBeanMap中存放着当前Bean被引用的Bean的集合
+			//比如当前需要实例化的是Bean的名字是userInfo,userInfo中有个Human类型的属性human，
+			// 那么就有human被userInfo引用的关系 human=[userInfo]
 			Set<String> dependentBeans =
 					this.dependentBeanMap.computeIfAbsent(canonicalName, k -> new LinkedHashSet<>(8));
 			if (!dependentBeans.add(dependentBeanName)) {
@@ -483,6 +488,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 		}
 
 		synchronized (this.dependenciesForBeanMap) {
+			//dependenciesForBeanMap中存放的是当前Bean所依赖的Bean的集合
 			Set<String> dependenciesForBean =
 					this.dependenciesForBeanMap.computeIfAbsent(dependentBeanName, k -> new LinkedHashSet<>(8));
 			dependenciesForBean.add(canonicalName);

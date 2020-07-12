@@ -295,7 +295,12 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	public Object postProcessAfterInitialization(@Nullable Object bean, String beanName) {
 		if (bean != null) {
 			Object cacheKey = getCacheKey(bean.getClass(), beanName);
+			// 当 Bean 被循环引用，并且被暴露了
+			// 则会通过 getEarlyBeanReference 来创建代理类
+			// 通过判断 earlyProxyReference中是否存在beanName 来决定
+			// 是否需要对 target 进行动态代理
 			if (this.earlyProxyReferences.remove(cacheKey) != bean) {
+				// 该方法将会返回代理类
 				return wrapIfNecessary(bean, beanName, cacheKey);
 			}
 		}
