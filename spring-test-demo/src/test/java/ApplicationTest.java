@@ -1,10 +1,14 @@
 import com.zhongjp.springTest.*;
+import com.zhongjp.springTest.config.ScanConfig;
+import com.zhongjp.springTest.service.DoService;
+import com.zhongjp.springTest.service.ExecuteService;
 import org.junit.Test;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.EnableAspectJAutoProxy;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
@@ -179,5 +183,15 @@ public class ApplicationTest {
 		System.out.println(user4);
 		UserFactoryBean userFactoryBean = (UserFactoryBean) applicationContext.getBean("&userFactoryBean");
 		System.out.println(userFactoryBean);
+	}
+
+	@Test
+	public void testAspect(){
+		AnnotationConfigApplicationContext ac = new AnnotationConfigApplicationContext(ScanConfig.class);
+		DoService doServiceImpl = (DoService) ac.getBean("doServiceImpl");
+		doServiceImpl.doMethod();
+		System.out.println("执行分割线--------------------------------------------------");
+		ExecuteService executeServiceImpl = (ExecuteService) ac.getBean("executeServiceImpl");
+		executeServiceImpl.execute();
 	}
 }
