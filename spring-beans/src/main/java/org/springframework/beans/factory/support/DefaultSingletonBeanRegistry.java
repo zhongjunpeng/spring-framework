@@ -184,6 +184,9 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 		 * 但是对于其他依赖它的对象而言已经足够了（可以根据对象引用定位到堆中对象），能够被认出来了，
 		 * 所以 Spring 在这个时候选择将该对象提前曝光出来让大家认识认识。
 		 */
+		/**
+		 * 这里只是添加了一个工厂，通过这个工厂（ObjectFactory）的getObject方法可以得到一个对象，而这个对象实际上就是通过getEarlyBeanReference这个方法创建的。
+		 */
 		synchronized (this.singletonObjects) {
 			if (!this.singletonObjects.containsKey(beanName)) {
 				// 往三级缓存里添加
@@ -279,6 +282,10 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 					logger.debug("Creating shared instance of singleton bean '" + beanName + "'");
 				}
 				// 加载前置处理，记录加载单例 bean 之前的加载状态
+				// 在单例对象创建前先做一个标记
+				// 将beanName放入到singletonsCurrentlyInCreation这个集合中
+				// 标志着这个单例Bean正在创建
+				// 如果同一个单例Bean多次被创建，这里会抛出异常
 				beforeSingletonCreation(beanName);
 				boolean newSingleton = false;
 				boolean recordSuppressedExceptions = (this.suppressedExceptions == null);
@@ -315,6 +322,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 					afterSingletonCreation(beanName);
 				}
 				if (newSingleton) {
+					//通过createBean方法返回的Bean最终被放到了一级缓存，也就是单例池中。
 					// 加入一级缓存中，删除二级缓存中的bean
 					addSingleton(beanName, singletonObject);
 				}
