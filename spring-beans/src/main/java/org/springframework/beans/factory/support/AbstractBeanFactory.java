@@ -234,6 +234,9 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 * not for actual use
 	 * @return an instance of the bean
 	 * @throws BeansException if the bean could not be created
+	 *
+	 * 1、创建一个新的Bean
+	 * 2、从缓存中获取到已经被创建的对象
 	 */
 	@SuppressWarnings("unchecked")
 	protected <T> T doGetBean(
@@ -247,6 +250,12 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 
 		// 从单例缓存集合或者实例工厂中获取 Bean对象
 		// Eagerly check singleton cache for manually registered singletons.
+		/**
+		 * 从缓存中尝试获取Bean，整个缓存分为三级：
+		 * 1、singletonObjects：一级缓存，存储的是所有创建好了的单例Bean
+		 * 2、earlySingletonObjects：二级缓存，存储的是完成实例化，但是还未进行属性注入及初始化的对象
+		 * 3、singletonFactories：三级缓存，提前暴露的一个单例工厂，二级缓存中存储的就是从这个工厂中获取到的对象
+		 */
 		Object sharedInstance = getSingleton(beanName);
 		/**
 		 * 单例设计模式的Bean在整个过程中只会创建一次。第一次创建后会将该Bean加载到缓存中。后面在获取Bean就会直接从单例缓存中获取

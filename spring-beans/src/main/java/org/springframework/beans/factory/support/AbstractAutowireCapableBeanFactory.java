@@ -641,6 +641,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			// 提前将创建好但未进行属性赋值的Bean放入缓存中
 			// 提前将创建的 bean 实例加入到 singletonFactories 中
 			// 这里是为了后期避免循环依赖
+			// 在完成Bean的实例化后，属性注入之前，Spring将Bean包装成一个工厂添加进三级缓存中。
 			addSingletonFactory(beanName, () -> {
 				return getEarlyBeanReference(beanName, mbd, bean);
 			});
@@ -1021,6 +1022,10 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 * @param mbd the merged bean definition for the bean
 	 * @param bean the raw bean instance
 	 * @return the object to expose as bean reference
+	 *
+	 * 它实际上就是调用了后置处理器的getEarlyBeanReference，
+	 * 而真正实现了这个方法的后置处理器只有一个，就是通过@EnableAspectJAutoProxy注解导入的AnnotationAwareAspectJAutoProxyCreator
+	 * 也就是说这个工厂啥都没干，直接将实例化阶段创建的对象返回了！所以说在不考虑AOP的情况下三级缓存有用嘛？讲道理，真的没什么用
 	 */
 	protected Object getEarlyBeanReference(String beanName, RootBeanDefinition mbd, Object bean) {
 		Object exposedObject = bean;
